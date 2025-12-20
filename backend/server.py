@@ -548,6 +548,36 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
         headers={"Content-Disposition": "attachment; filename=leadtrack_report.xlsx"}
     )
 
+@api_router.get("/dross")
+async def get_dross_data(current_user: dict = Depends(get_current_user)):
+    # Get all refining entries with dross data
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
+    
+    dross_data = []
+    for entry in refining_entries:
+        if isinstance(entry['timestamp'], str):
+            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        for batch_idx, batch in enumerate(entry.get('batches', []), 1):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            
+            dross_data.append({
+                'entry_id': entry['id'],
+                'user_name': entry['user_name'],
+                'timestamp': entry['timestamp'],
+                'batch_number': batch_idx,
+                'initial_dross_kg': batch['initial_dross_kg'],
+                'dross_2nd_kg': batch['dross_2nd_kg'],
+                'dross_3rd_kg': batch['dross_3rd_kg'],
+                'total_dross': batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+            })
+    
+    # Sort by timestamp descending
+    dross_data.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    return dross_data
+
 app.include_router(api_router)
 
 app.add_middleware(
