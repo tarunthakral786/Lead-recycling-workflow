@@ -84,7 +84,8 @@ export default function RecyclingPage({ user }) {
 
   const handleSubmit = async () => {
     setLoading(true);
-    try {\n      // Filter batches that have at least battery input complete (Step 1)
+    try {
+      // Filter batches that have at least battery input complete (Step 1)
       const completeBatches = batches.filter(batch => 
         batch.battery_kg && batch.battery_image
       );
@@ -100,20 +101,16 @@ export default function RecyclingPage({ user }) {
       const batchesData = completeBatches.map(batch => ({
         battery_type: batch.battery_type,
         battery_kg: parseFloat(batch.battery_kg),
-        quantity_received: parseFloat(batch.quantity_received) || 0
+        quantity_received: parseFloat(batch.quantity_received) || 0,
+        has_output_image: !!batch.remelted_lead_image
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
       
       completeBatches.forEach(batch => {
         form.append('files', batch.battery_image);
-        // If remelted_lead_image exists, append it, otherwise create a placeholder
         if (batch.remelted_lead_image) {
           form.append('files', batch.remelted_lead_image);
-        } else {
-          // Create a minimal placeholder image for incomplete output
-          const emptyBlob = new Blob([''], { type: 'image/png' });
-          form.append('files', emptyBlob, 'placeholder.png');
         }
       });
 
