@@ -394,12 +394,20 @@ export default function RecyclingPage({ user }) {
           {step < 2 ? (
             <>
               <Button
-                onClick={addBatch}
-                data-testid="add-batch-button"
+                onClick={handleSubmit}
+                data-testid="save-inputs-button"
+                disabled={!anyBatchCanProceed() || loading}
                 className="flex-1 h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg"
               >
+                {loading ? 'Saving...' : `Save ${getStep1CompleteCount()} Input(s)`}
+              </Button>
+              <Button
+                onClick={addBatch}
+                data-testid="add-batch-button"
+                className="flex-1 h-16 text-xl font-bold bg-slate-600 hover:bg-slate-700 text-white shadow-lg rounded-lg"
+              >
                 <Plus className="w-6 h-6 mr-2" />
-                Add Battery Batch
+                Add Battery
               </Button>
               <Button
                 onClick={() => setStep(step + 1)}
@@ -422,15 +430,9 @@ export default function RecyclingPage({ user }) {
           )}
         </div>
         
-        {step === 2 && batches.length > getCompleteCount() && getCompleteCount() > 0 && (
-          <div className="text-center text-base text-orange-600 font-semibold mt-4">
-            ⚠️ {batches.length - getCompleteCount()} incomplete batch(es) will be skipped
-          </div>
-        )}
-        
-        {step === 2 && getCompleteCount() > 0 && (
+        {step === 1 && anyBatchCanProceed() && (
           <div className="text-center text-sm text-slate-600 mt-2">
-            💡 Batches can be saved with just battery input. Output details can be added later.
+            💡 Save battery inputs now. Output details can be added later.
           </div>
         )}
       </div>
