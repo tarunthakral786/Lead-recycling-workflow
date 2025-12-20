@@ -6,6 +6,7 @@ import HomePage from "@/pages/HomePage";
 import RefiningPage from "@/pages/RefiningPage";
 import RecyclingPage from "@/pages/RecyclingPage";
 import DrossRecyclingPage from "@/pages/DrossRecyclingPage";
+import DrossRecyclingEntryPage from "@/pages/DrossRecyclingEntryPage";
 import HistoryPage from "@/pages/HistoryPage";
 import SalesPage from "@/pages/SalesPage";
 import { Toaster } from "@/components/ui/sonner";
