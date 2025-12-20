@@ -167,6 +167,62 @@ class DrossRecoveryCreate(BaseModel):
     batch_number: int
     pure_lead_recovered: float
 
+class SaleCreate(BaseModel):
+    party_name: str
+    quantity_kg: float
+
+@api_router.post("/dross/recovery")
+async def add_dross_recovery(
+    recovery_data: DrossRecoveryCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    # Get the original refining entry to get dross quantities
+    refining_entry = await db.entries.find_one(
+        {"id": recovery_data.dross_entry_id, "entry_type": "refining"}, 
+        {"_id": 0}
+    )
+    
+    if not refining_entry:
+        raise HTTPException(status_code=404, detail="Refining entry not found")
+    
+    # Find the specific batch
+    batch_idx = recovery_data.batch_number - 1
+    if batch_idx >= len(refining_entry.get('batches', [])):
+        raise HTTPException(status_code=404, detail="Batch not found")
+    
+    batch = refining_entry['batches'][batch_idx]
+    total_dross = batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+    recovery_percentage = (recovery_data.pure_lead_recovered / total_dross * 100) if total_dross > 0 else 0
+    
+    recovery = DrossRecovery(
+        dross_entry_id=recovery_data.dross_entry_id,
+        batch_number=recovery_data.batch_number,
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        initial_dross_kg=batch['initial_dross_kg'],
+        dross_2nd_kg=batch['dross_2nd_kg'],
+        dross_3rd_kg=batch['dross_3rd_kg'],
+        total_dross=total_dross,
+        pure_lead_recovered=recovery_data.pure_lead_recovered,
+        recovery_percentage=round(recovery_percentage, 2)
+    )
+    
+    doc = recovery.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    await db.dross_recoveries.insert_one(doc)
+    
+    return {"id": recovery.id, "message": "Dross recovery recorded successfully"}
+
+@api_router.get("/dross/recoveries")
+async def get_dross_recoveries(current_user: dict = Depends(get_current_user)):
+    recoveries = await db.dross_recoveries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    
+    for recovery in recoveries:
+        if isinstance(recovery['timestamp'], str):
+            recovery['timestamp'] = datetime.fromisoformat(recovery['timestamp'])
+    
+    return recoveries
+
 class SummaryStats(BaseModel):
     total_pure_lead_manufactured: float
     total_remelted_lead: float
