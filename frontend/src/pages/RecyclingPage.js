@@ -151,7 +151,7 @@ export default function RecyclingPage({ user }) {
 
   const getCompleteCount = () => {
     return batches.filter(batch => 
-      batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
+      batch.battery_kg && batch.battery_image
     ).length;
   };
 
