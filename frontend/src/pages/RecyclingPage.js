@@ -29,6 +29,7 @@ export default function RecyclingPage({ user }) {
       battery_type: 'PP',
       battery_kg: '',
       battery_image: null,
+      quantity_received: '',
       remelted_lead_image: null
     }]);
     setImagePreviews([...imagePreviews, {}]);
