@@ -70,6 +70,17 @@ export default function RecyclingPage({ user }) {
     return (parseFloat(batteryKg) * percentage).toFixed(2);
   };
 
+  const calculateReceivable = (batteryKg, batteryType, quantityReceived) => {
+    const totalOutput = parseFloat(calculateOutput(batteryKg, batteryType));
+    const received = parseFloat(quantityReceived) || 0;
+    return (totalOutput - received).toFixed(2);
+  };
+
+  const calculateRecoveryPercent = (batteryKg, quantityReceived) => {
+    if (!batteryKg || !quantityReceived) return 0;
+    return ((parseFloat(quantityReceived) / parseFloat(batteryKg)) * 100).toFixed(2);
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
