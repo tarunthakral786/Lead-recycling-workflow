@@ -15,24 +15,89 @@ const API = `${BACKEND_URL}/api`;
 export default function DrossRecyclingPage({ user }) {
   const navigate = useNavigate();
   const [drossData, setDrossData] = useState([]);
+  const [recoveries, setRecoveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [selectedDross, setSelectedDross] = useState(null);
+  const [recoveryAmount, setRecoveryAmount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchDrossData();
+    fetchData();
   }, []);
 
-  const fetchDrossData = async () => {
+  const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/dross`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setDrossData(response.data);
+      const [drossRes, recoveryRes] = await Promise.all([
+        axios.get(`${API}/dross`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${API}/dross/recoveries`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      setDrossData(drossRes.data);
+      setRecoveries(recoveryRes.data);
     } catch (error) {
       toast.error('Failed to load dross data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddRecovery = (drossItem) => {
+    setSelectedDross(drossItem);
+    setRecoveryAmount('');
+    setShowRecoveryDialog(true);
+  };
+
+  const handleSubmitRecovery = async () => {
+    if (!recoveryAmount || parseFloat(recoveryAmount) <= 0) {
+      toast.error('Please enter a valid recovery amount');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/dross/recovery`, {
+        dross_entry_id: selectedDross.entry_id,
+        batch_number: selectedDross.batch_number,
+        pure_lead_recovered: parseFloat(recoveryAmount)
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      toast.success('Pure lead recovery recorded!');
+      setShowRecoveryDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to record recovery');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/dross/export/excel`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'dross_data.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Excel file downloaded!');
+    } catch (error) {
+      toast.error('Failed to export');
+    }
+  };
+
+  const getRecoveryForBatch = (entryId, batchNumber) => {
+    return recoveries.find(r => r.dross_entry_id === entryId && r.batch_number === batchNumber);
   };
 
   const formatDateTime = (dateString) => {
