@@ -73,6 +73,10 @@ function App() {
             element={user ? <DrossRecyclingEntryPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
+            path="/control-panel" 
+            element={user ? <ControlPanelPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
             path="/history" 
             element={user ? <HistoryPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
