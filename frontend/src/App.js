@@ -7,18 +7,8 @@ import HistoryPage from "@/pages/HistoryPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
-    setLoading(false);
-  }, []);
+  const [user, setUser] = useState({ id: 'preview', name: 'Preview User', email: 'preview@demo.com' });
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = (token, userData) => {
     localStorage.setItem('token', token);
