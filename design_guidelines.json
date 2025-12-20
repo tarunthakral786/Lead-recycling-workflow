@@ -1,0 +1,131 @@
+{
+  "identity": {
+    "name": "LeadTrack Pro",
+    "persona": "The Industrial Braun",
+    "vibe": "Functional, Tactile, High-Contrast, Safety-First",
+    "principles": [
+      "Clarity over Beauty: If it's not legible at arm's length, it's wrong.",
+      "Touch First: Buttons must be hit-able with gloves on.",
+      "Linear Flow: One task at a time. Don't overwhelm.",
+      "Visual Confirmation: Every action gets a clear success state."
+    ]
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Manrope, sans-serif",
+      "body": "Manrope, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-4xl font-bold tracking-tight text-slate-900",
+      "h2": "text-3xl font-bold tracking-tight text-slate-900",
+      "h3": "text-2xl font-semibold text-slate-800",
+      "body_lg": "text-xl font-medium text-slate-700",
+      "body": "text-lg font-medium text-slate-600",
+      "label": "text-sm font-bold uppercase tracking-wider text-slate-500",
+      "input_text": "text-2xl font-semibold text-slate-900"
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": "#F1F5F9",
+      "surface": "#FFFFFF",
+      "primary": "#EA580C",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#334155",
+      "secondary_foreground": "#FFFFFF",
+      "accent": "#FDBA74",
+      "destructive": "#EF4444",
+      "success": "#22C55E",
+      "border": "#CBD5E1",
+      "input": "#E2E8F0",
+      "ring": "#F97316"
+    },
+    "usage": {
+      "body_bg": "bg-slate-100",
+      "card_bg": "bg-white shadow-sm border border-slate-200",
+      "primary_btn": "bg-orange-600 hover:bg-orange-700 text-white shadow-md active:scale-95 transition-transform",
+      "secondary_btn": "bg-slate-700 hover:bg-slate-800 text-white",
+      "input_field": "bg-white border-2 border-slate-300 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 rounded-lg"
+    }
+  },
+  "layout": {
+    "grid_system": "grid grid-cols-1 md:grid-cols-12 gap-6",
+    "container": "max-w-3xl mx-auto px-4 py-8",
+    "spacing": {
+      "section_gap": "gap-8",
+      "element_gap": "gap-6",
+      "internal_padding": "p-6 md:p-8"
+    },
+    "radius": {
+      "default": "rounded-xl",
+      "button": "rounded-lg",
+      "input": "rounded-lg"
+    }
+  },
+  "components": {
+    "buttons": {
+      "base": "h-16 px-8 text-xl font-bold flex items-center justify-center gap-3 transition-all",
+      "primary": "bg-orange-600 text-white hover:bg-orange-700 shadow-lg hover:shadow-xl",
+      "secondary": "bg-white text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50"
+    },
+    "inputs": {
+      "base": "h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all placeholder:text-slate-300",
+      "label": "block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2"
+    },
+    "cards": {
+      "entry_card": "bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8 flex flex-col gap-6",
+      "history_card": "bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between hover:border-orange-300 transition-colors cursor-pointer"
+    },
+    "camera_upload": {
+      "container": "border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-orange-50 hover:border-orange-300 transition-colors cursor-pointer h-64 flex flex-col items-center justify-center gap-4",
+      "icon": "w-16 h-16 text-slate-400",
+      "text": "text-lg font-semibold text-slate-500"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": "shadow-[0_2px_8px_rgba(0,0,0,0.08)]",
+    "borders": "border border-slate-200",
+    "glass": "backdrop-blur-md bg-white/80 border-b border-slate-200/50"
+  },
+  "motion": {
+    "hover": "transition-all duration-200 ease-out",
+    "click": "active:scale-[0.98]",
+    "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500"
+  },
+  "image_urls": {
+    "hero_bg": "https://images.unsplash.com/photo-1724488038316-b67861d88aec",
+    "worker_context": "https://images.unsplash.com/photo-1661260518150-184aa3f44186",
+    "scale_context": "https://images.unsplash.com/photo-1618939291225-8d558ea4369f",
+    "placeholder_metal": "https://images.unsplash.com/photo-1724488038316-b67861d88aec"
+  },
+  "instructions_to_main_agent": [
+    "1. SIMPLICITY IS KING: Do not create complex dashboards. The user is standing on a factory floor.",
+    "2. BIG INPUTS: All input fields must be at least 64px (h-16) tall. Font size 24px (text-2xl).",
+    "3. STEPPER NAVIGATION: Use a clear step-by-step flow for the entry process (Ingots -> Dross -> Output).",
+    "4. PHOTO FIRST: The photo upload area should be prominent and look like a big button.",
+    "5. HIGH CONTRAST: Ensure text is always Slate-900 on White. No subtle greys for important data.",
+    "6. USE SHADCN: Use Shadcn components but override the styles to match the 'Industrial' theme (thicker borders, square corners).",
+    "7. DATA-TESTID: Add data-testid to every input and button."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Examine existing components to understand the project's component patterns before creating new ones",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use sonner for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
