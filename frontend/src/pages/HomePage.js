@@ -54,7 +54,7 @@ export default function HomePage({ user, onLogout }) {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-2">
               <FlaskConical className="w-8 h-8 text-blue-600" />
@@ -73,7 +73,18 @@ export default function HomePage({ user, onLogout }) {
             <p className="text-3xl font-bold text-slate-900" data-testid="remelted-stat">
               {loading ? '...' : `${stats?.total_remelted_lead || 0} kg`}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Actual received from recycling</p>
+            <p className="text-xs text-slate-500 mt-1">Total received</p>
+          </Card>
+
+          <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <Recycle className="w-8 h-8 text-teal-600" />
+              <span className="text-sm font-bold text-slate-500 uppercase">In Stock</span>
+            </div>
+            <p className="text-3xl font-bold text-teal-700" data-testid="remelted-stock-stat">
+              {loading ? '...' : `${stats?.remelted_lead_in_stock || 0} kg`}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">Remelted lead available</p>
           </Card>
 
           {user.name === 'TT' && (
@@ -107,6 +118,7 @@ export default function HomePage({ user, onLogout }) {
             <p className="text-3xl font-bold text-green-600" data-testid="available-stat">
               {loading ? '...' : `${stats?.available_stock || 0} kg`}
             </p>
+            <p className="text-xs text-slate-500 mt-1">Total in stock</p>
           </Card>
         </div>
 
