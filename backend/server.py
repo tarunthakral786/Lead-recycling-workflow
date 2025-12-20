@@ -437,7 +437,8 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
     ws_recycling = wb.create_sheet("Recycling")
     headers_recycling = [
         "Date", "Time", "Employee", "Batch #",
-        "Battery Type", "Battery Input (kg)", "Remelted Lead Output (kg)"
+        "Battery Type", "Battery Input (kg)", "Expected Output (kg)", 
+        "Quantity Received (kg)", "Receivable (kg)", "Recovery %"
     ]
     
     for col_num, header in enumerate(headers_recycling, 1):
