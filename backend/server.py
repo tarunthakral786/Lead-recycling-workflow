@@ -122,7 +122,10 @@ class RecyclingBatch(BaseModel):
     battery_type: str  # "PP" or "MC/SMF"
     battery_kg: float
     battery_image: str
+    quantity_received: float  # Actual quantity received after recycling
     remelted_lead_kg: float  # Auto-calculated
+    receivable_kg: float  # Auto-calculated (remelted - received)
+    recovery_percent: float  # Auto-calculated
     remelted_lead_image: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
