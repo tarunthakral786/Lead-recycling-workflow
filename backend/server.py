@@ -738,6 +738,73 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
         headers={"Content-Disposition": "attachment; filename=leadtrack_report.xlsx"}
     )
 
+@api_router.post("/dross-recycling/entries")
+async def create_dross_recycling_entry(
+    batches_data: str = Form(...),
+    files: List[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    import json
+    batches_json = json.loads(batches_data)
+    
+    batches = []
+    for idx, batch_data in enumerate(batches_json):
+        # Compress and encode spectro image
+        spectro_image = base64.b64encode(await files[idx].read()).decode('utf-8')
+        
+        batch = DrossRecyclingBatch(
+            dross_type=batch_data['dross_type'],
+            quantity_sent=batch_data['quantity_sent'],
+            high_lead_recovered=batch_data['high_lead_recovered'],
+            spectro_image=spectro_image
+        )
+        batches.append(batch)
+    
+    entry = DrossRecyclingEntry(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        batches=batches
+    )
+    
+    doc = entry.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    for batch in doc['batches']:
+        batch['timestamp'] = batch['timestamp'].isoformat()
+    
+    await db.dross_recycling_entries.insert_one(doc)
+    return {"id": entry.id, "message": "Dross recycling entry created successfully"}
+
+@api_router.get("/dross-recycling/entries")
+async def get_dross_recycling_entries(current_user: dict = Depends(get_current_user)):
+    entries = await db.dross_recycling_entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    
+    for entry in entries:
+        if isinstance(entry['timestamp'], str):
+            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        # Remove images from list view for performance
+        for batch in entry.get('batches', []):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            batch.pop('spectro_image', None)
+    
+    return entries
+
+@api_router.get("/dross-recycling/entries/{entry_id}")
+async def get_dross_recycling_entry_detail(entry_id: str, current_user: dict = Depends(get_current_user)):
+    entry = await db.dross_recycling_entries.find_one({"id": entry_id}, {"_id": 0})
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    if isinstance(entry['timestamp'], str):
+        entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+    
+    for batch in entry.get('batches', []):
+        if isinstance(batch.get('timestamp'), str):
+            batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+    
+    return entry
+
 @api_router.get("/dross")
 async def get_dross_data(current_user: dict = Depends(get_current_user)):
     # Get all refining entries with dross data
