@@ -339,18 +339,6 @@ export default function RefiningPage({ user }) {
           </Card>
         ))}
 
-        {/* Add Batch Button */}
-        {step === 1 && (
-          <Button
-            onClick={addBatch}
-            data-testid="add-batch-button"
-            className="w-full h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg mb-6"
-          >
-            <Plus className="w-6 h-6 mr-2" />
-            Add Another Batch
-          </Button>
-        )}
-
         {/* Navigation Buttons */}
         <div className="flex gap-4">
           {step > 1 && (
@@ -363,14 +351,24 @@ export default function RefiningPage({ user }) {
             </Button>
           )}
           {step < 3 ? (
-            <Button
-              onClick={() => setStep(step + 1)}
-              data-testid="next-step-button"
-              disabled={!allBatchesCanProceed()}
-              className="flex-1 h-16 text-xl font-bold bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next Step
-            </Button>
+            <>
+              <Button
+                onClick={addBatch}
+                data-testid="add-batch-button"
+                className="flex-1 h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg"
+              >
+                <Plus className="w-6 h-6 mr-2" />
+                Add Lead Batch
+              </Button>
+              <Button
+                onClick={() => setStep(step + 1)}
+                data-testid="next-step-button"
+                disabled={!allBatchesCanProceed()}
+                className="flex-1 h-16 text-xl font-bold bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next Step
+              </Button>
+            </>
           ) : (
             <Button
               onClick={handleSubmit}
