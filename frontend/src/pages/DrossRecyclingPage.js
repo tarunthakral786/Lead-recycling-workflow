@@ -15,12 +15,23 @@ const API = `${BACKEND_URL}/api`;
 export default function DrossRecyclingPage({ user }) {
   const navigate = useNavigate();
   const [drossData, setDrossData] = useState([]);
+  const [recyclingEntries, setRecyclingEntries] = useState([]);
   const [recoveries, setRecoveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [showAddEntryDialog, setShowAddEntryDialog] = useState(false);
   const [selectedDross, setSelectedDross] = useState(null);
   const [recoveryAmount, setRecoveryAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // New entry state
+  const [entryBatches, setEntryBatches] = useState([{
+    dross_type: 'initial',
+    quantity_sent: '',
+    high_lead_recovered: '',
+    spectro_image: null
+  }]);
+  const [imagePreviews, setImagePreviews] = useState([{}]);
 
   useEffect(() => {
     fetchData();
