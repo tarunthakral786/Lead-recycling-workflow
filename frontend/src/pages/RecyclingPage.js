@@ -393,23 +393,29 @@ export default function RecyclingPage({ user }) {
               <Button
                 onClick={() => setStep(step + 1)}
                 data-testid="next-step-button"
-                disabled={!allBatchesCanProceed()}
+                disabled={!anyBatchCanProceed()}
                 className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next Step
+                Next Step ({getStep1CompleteCount()})
               </Button>
             </>
           ) : (
             <Button
               onClick={handleSubmit}
               data-testid="submit-entry-button"
-              disabled={!allBatchesCanProceed() || loading}
+              disabled={!anyBatchCanProceed() || loading}
               className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : `Save ${batches.length} Batch(es)`}
+              {loading ? 'Saving...' : `Save ${getCompleteCount()} Batch(es)`}
             </Button>
           )}
         </div>
+        
+        {step === 2 && batches.length > getCompleteCount() && getCompleteCount() > 0 && (
+          <div className="text-center text-base text-orange-600 font-semibold mt-4">
+            ⚠️ {batches.length - getCompleteCount()} incomplete batch(es) will be skipped
+          </div>
+        )}
       </div>
     </div>
   );
