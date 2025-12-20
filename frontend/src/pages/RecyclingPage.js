@@ -84,9 +84,20 @@ export default function RecyclingPage({ user }) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      // Filter only complete batches
+      const completeBatches = batches.filter(batch => 
+        batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
+      );
+
+      if (completeBatches.length === 0) {
+        toast.error('Please complete at least one batch');
+        setLoading(false);
+        return;
+      }
+
       const form = new FormData();
       
-      const batchesData = batches.map(batch => ({
+      const batchesData = completeBatches.map(batch => ({
         battery_type: batch.battery_type,
         battery_kg: parseFloat(batch.battery_kg),
         quantity_received: parseFloat(batch.quantity_received) || 0
@@ -94,7 +105,7 @@ export default function RecyclingPage({ user }) {
       
       form.append('batches_data', JSON.stringify(batchesData));
       
-      batches.forEach(batch => {
+      completeBatches.forEach(batch => {
         form.append('files', batch.battery_image);
         form.append('files', batch.remelted_lead_image);
       });
@@ -107,7 +118,7 @@ export default function RecyclingPage({ user }) {
         }
       });
 
-      toast.success(`${batches.length} batch(es) saved successfully!`);
+      toast.success(`${completeBatches.length} batch(es) saved successfully!`);
       navigate('/');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to save entry');
@@ -117,9 +128,16 @@ export default function RecyclingPage({ user }) {
   };
 
   const canSubmit = () => {
-    return batches.every(batch => 
+    // Check if at least one batch is complete
+    return batches.some(batch => 
       batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
     );
+  };
+
+  const getCompleteCount = () => {
+    return batches.filter(batch => 
+      batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
+    ).length;
   };
 
   const renderImageUpload = (batchIndex, field, label) => (
