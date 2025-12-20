@@ -253,17 +253,24 @@ async def create_recycling_entry(
         # Auto-calculate remelted lead based on battery type
         battery_kg = batch_data['battery_kg']
         battery_type = batch_data['battery_type']
+        quantity_received = batch_data.get('quantity_received', 0)
         
         if battery_type == "PP":
             remelted_lead_kg = battery_kg * 0.605
         else:  # MC/SMF
             remelted_lead_kg = battery_kg * 0.58
         
+        receivable_kg = remelted_lead_kg - quantity_received
+        recovery_percent = (quantity_received / battery_kg * 100) if battery_kg > 0 else 0
+        
         batch = RecyclingBatch(
             battery_type=battery_type,
             battery_kg=battery_kg,
             battery_image=base64.b64encode(await files[file_idx].read()).decode('utf-8'),
+            quantity_received=quantity_received,
             remelted_lead_kg=round(remelted_lead_kg, 2),
+            receivable_kg=round(receivable_kg, 2),
+            recovery_percent=round(recovery_percent, 2),
             remelted_lead_image=base64.b64encode(await files[file_idx + 1].read()).decode('utf-8')
         )
         batches.append(batch)
