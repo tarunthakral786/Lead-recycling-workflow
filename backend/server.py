@@ -241,6 +241,11 @@ async def update_recovery_settings(settings: RecoverySettings, admin: dict = Dep
     return {"message": "Recovery settings updated successfully"}
 
 # Auth
+@api_router.get("/users/list")
+async def list_all_users():
+    users = await db.users.find({}, {"_id": 0, "hashed_password": 0, "created_at": 0}).to_list(100)
+    return users
+
 @api_router.post("/auth/register", response_model=UserResponse)
 async def register(user_data: UserCreate):
     existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
