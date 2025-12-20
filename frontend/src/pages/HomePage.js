@@ -134,7 +134,7 @@ export default function HomePage({ user, onLogout }) {
         </div>
 
         {/* Main Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card
             className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-all active:scale-95"
             onClick={() => navigate('/refining')}
@@ -153,6 +153,16 @@ export default function HomePage({ user, onLogout }) {
             <Recycle className="w-16 h-16 text-white mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">RECYCLING</h2>
             <p className="text-xl text-green-50">Process batteries into remelted lead</p>
+          </Card>
+
+          <Card
+            className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-all active:scale-95"
+            onClick={() => navigate('/dross-recycling')}
+            data-testid="dross-recycling-option"
+          >
+            <Recycle className="w-16 h-16 text-white mb-4" />
+            <h2 className="text-3xl font-bold text-white mb-2">DROSS RECYCLING</h2>
+            <p className="text-xl text-amber-50">View and track dross from refining</p>
           </Card>
         </div>
 
