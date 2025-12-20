@@ -21,25 +21,19 @@ from openpyxl.styles import Font, PatternFill, Alignment
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
-# Helper functions
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -66,6 +60,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         return user
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication")
+
+async def require_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get('name') != 'TT':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
 
 # Models
 class UserCreate(BaseModel):
@@ -95,6 +94,10 @@ class TokenResponse(BaseModel):
     token_type: str
     user: UserResponse
 
+class RecoverySettings(BaseModel):
+    pp_battery_percent: float = 60.5
+    mc_smf_battery_percent: float = 58.0
+
 class RefiningBatch(BaseModel):
     lead_ingot_kg: float
     lead_ingot_pieces: int
@@ -119,13 +122,13 @@ class RefiningEntry(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class RecyclingBatch(BaseModel):
-    battery_type: str  # "PP" or "MC/SMF"
+    battery_type: str
     battery_kg: float
     battery_image: str
-    quantity_received: float  # Actual quantity received after recycling
-    remelted_lead_kg: float  # Auto-calculated
-    receivable_kg: float  # Auto-calculated (remelted - received)
-    recovery_percent: float  # Auto-calculated
+    quantity_received: float
+    remelted_lead_kg: float
+    receivable_kg: float
+    recovery_percent: float
     remelted_lead_image: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -138,96 +141,11 @@ class RecyclingEntry(BaseModel):
     batches: List[RecyclingBatch]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class SaleEntry(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    user_name: str
-    party_name: str
-    quantity_kg: float
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class DrossRecovery(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    dross_entry_id: str
-    batch_number: int
-    user_id: str
-    user_name: str
-    initial_dross_kg: float
-    dross_2nd_kg: float
-    dross_3rd_kg: float
-    total_dross: float
-    pure_lead_recovered: float
-    recovery_percentage: float  # (recovered / total_dross) * 100
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class DrossRecoveryCreate(BaseModel):
-    dross_entry_id: str
-    batch_number: int
-    pure_lead_recovered: float
-
-class SaleCreate(BaseModel):
-    party_name: str
-    quantity_kg: float
-
-@api_router.post("/dross/recovery")
-async def add_dross_recovery(
-    recovery_data: DrossRecoveryCreate,
-    current_user: dict = Depends(get_current_user)
-):
-    # Get the original refining entry to get dross quantities
-    refining_entry = await db.entries.find_one(
-        {"id": recovery_data.dross_entry_id, "entry_type": "refining"}, 
-        {"_id": 0}
-    )
-    
-    if not refining_entry:
-        raise HTTPException(status_code=404, detail="Refining entry not found")
-    
-    # Find the specific batch
-    batch_idx = recovery_data.batch_number - 1
-    if batch_idx >= len(refining_entry.get('batches', [])):
-        raise HTTPException(status_code=404, detail="Batch not found")
-    
-    batch = refining_entry['batches'][batch_idx]
-    total_dross = batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
-    recovery_percentage = (recovery_data.pure_lead_recovered / total_dross * 100) if total_dross > 0 else 0
-    
-    recovery = DrossRecovery(
-        dross_entry_id=recovery_data.dross_entry_id,
-        batch_number=recovery_data.batch_number,
-        user_id=current_user["id"],
-        user_name=current_user["name"],
-        initial_dross_kg=batch['initial_dross_kg'],
-        dross_2nd_kg=batch['dross_2nd_kg'],
-        dross_3rd_kg=batch['dross_3rd_kg'],
-        total_dross=total_dross,
-        pure_lead_recovered=recovery_data.pure_lead_recovered,
-        recovery_percentage=round(recovery_percentage, 2)
-    )
-    
-    doc = recovery.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    await db.dross_recoveries.insert_one(doc)
-    
-    return {"id": recovery.id, "message": "Dross recovery recorded successfully"}
-
-@api_router.get("/dross/recoveries")
-async def get_dross_recoveries(current_user: dict = Depends(get_current_user)):
-    recoveries = await db.dross_recoveries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
-    
-    for recovery in recoveries:
-        if isinstance(recovery['timestamp'], str):
-            recovery['timestamp'] = datetime.fromisoformat(recovery['timestamp'])
-    
-    return recoveries
-
 class DrossRecyclingBatch(BaseModel):
-    dross_type: str  # "initial", "2nd", "3rd"
-    quantity_sent: float  # kg sent for recycling
-    high_lead_recovered: float  # kg of high lead recovered
-    spectro_image: str  # base64 image
+    dross_type: str
+    quantity_sent: float
+    high_lead_recovered: float
+    spectro_image: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DrossRecyclingEntry(BaseModel):
@@ -238,21 +156,91 @@ class DrossRecyclingEntry(BaseModel):
     batches: List[DrossRecyclingBatch]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class SaleEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    party_name: str
+    quantity_kg: float
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SaleCreate(BaseModel):
+    party_name: str
+    quantity_kg: float
+
 class SummaryStats(BaseModel):
     total_pure_lead_manufactured: float
     total_remelted_lead: float
     total_sold: float
     available_stock: float
-    total_receivable: float  # TT only - scrap battery receivable
-    remelted_lead_in_stock: float  # Remelted lead available
-    total_dross: float  # Total dross from refining
-    total_high_lead: float  # Total high lead from dross recycling
+    total_receivable: float
+    remelted_lead_in_stock: float
+    total_dross: float
+    total_high_lead: float
 
 # Routes
 @api_router.get("/")
 async def root():
     return {"message": "LeadTrack Pro API"}
 
+# Admin - User Management
+@api_router.post("/admin/users", response_model=UserResponse)
+async def create_user(user_data: UserCreate, admin: dict = Depends(require_admin)):
+    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user = User(
+        name=user_data.name,
+        email=user_data.email,
+        hashed_password=hash_password(user_data.password)
+    )
+    
+    doc = user.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.users.insert_one(doc)
+    
+    return UserResponse(id=user.id, name=user.name, email=user.email)
+
+@api_router.get("/admin/users", response_model=List[UserResponse])
+async def get_all_users(admin: dict = Depends(require_admin)):
+    users = await db.users.find({}, {"_id": 0, "hashed_password": 0}).to_list(100)
+    return [UserResponse(id=u['id'], name=u['name'], email=u['email']) for u in users]
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
+    # Prevent deleting TT account
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if user and user.get('name') == 'TT':
+        raise HTTPException(status_code=400, detail="Cannot delete TT admin account")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User deleted successfully"}
+
+# Admin - Recovery Settings
+@api_router.get("/admin/recovery-settings", response_model=RecoverySettings)
+async def get_recovery_settings(current_user: dict = Depends(get_current_user)):
+    settings = await db.settings.find_one({"type": "recovery_settings"}, {"_id": 0})
+    if not settings:
+        return RecoverySettings()
+    return RecoverySettings(**settings)
+
+@api_router.put("/admin/recovery-settings")
+async def update_recovery_settings(settings: RecoverySettings, admin: dict = Depends(require_admin)):
+    await db.settings.update_one(
+        {"type": "recovery_settings"},
+        {"$set": {
+            "pp_battery_percent": settings.pp_battery_percent,
+            "mc_smf_battery_percent": settings.mc_smf_battery_percent
+        }},
+        upsert=True
+    )
+    return {"message": "Recovery settings updated successfully"}
+
+# Auth
 @api_router.post("/auth/register", response_model=UserResponse)
 async def register(user_data: UserCreate):
     existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
@@ -284,6 +272,7 @@ async def login(credentials: UserLogin):
         user=UserResponse(id=user["id"], name=user["name"], email=user["email"])
     )
 
+# Refining
 @api_router.post("/refining/entries")
 async def create_refining_entry(
     batches_data: str = Form(...),
@@ -293,7 +282,6 @@ async def create_refining_entry(
     import json
     batches_json = json.loads(batches_data)
     
-    # Process images
     file_idx = 0
     batches = []
     
@@ -328,6 +316,14 @@ async def create_refining_entry(
     await db.entries.insert_one(doc)
     return {"id": entry.id, "message": "Refining entry created successfully"}
 
+@api_router.delete("/admin/entries/{entry_id}")
+async def delete_entry(entry_id: str, admin: dict = Depends(require_admin)):
+    result = await db.entries.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Entry deleted successfully"}
+
+# Recycling
 @api_router.post("/recycling/entries")
 async def create_recycling_entry(
     batches_data: str = Form(...),
@@ -337,29 +333,31 @@ async def create_recycling_entry(
     import json
     batches_json = json.loads(batches_data)
     
+    # Get recovery settings
+    settings = await db.settings.find_one({"type": "recovery_settings"}, {"_id": 0})
+    pp_percent = settings.get('pp_battery_percent', 60.5) / 100 if settings else 0.605
+    mc_smf_percent = settings.get('mc_smf_battery_percent', 58.0) / 100 if settings else 0.58
+    
     file_idx = 0
     batches = []
     
     for batch_data in batches_json:
-        # Auto-calculate remelted lead based on battery type
         battery_kg = batch_data['battery_kg']
         battery_type = batch_data['battery_type']
         quantity_received = batch_data.get('quantity_received', 0)
         has_output_image = batch_data.get('has_output_image', False)
         
         if battery_type == "PP":
-            remelted_lead_kg = battery_kg * 0.605
-        else:  # MC/SMF
-            remelted_lead_kg = battery_kg * 0.58
+            remelted_lead_kg = battery_kg * pp_percent
+        else:
+            remelted_lead_kg = battery_kg * mc_smf_percent
         
         receivable_kg = remelted_lead_kg - quantity_received
         recovery_percent = (quantity_received / battery_kg * 100) if battery_kg > 0 else 0
         
-        # Read battery input image
         battery_image = base64.b64encode(await files[file_idx].read()).decode('utf-8')
         file_idx += 1
         
-        # Read output image if it exists, otherwise use empty string
         if has_output_image:
             remelted_lead_image = base64.b64encode(await files[file_idx].read()).decode('utf-8')
             file_idx += 1
@@ -392,6 +390,79 @@ async def create_recycling_entry(
     await db.entries.insert_one(doc)
     return {"id": entry.id, "message": "Recycling entry created successfully"}
 
+# Dross Recycling
+@api_router.post("/dross-recycling/entries")
+async def create_dross_recycling_entry(
+    batches_data: str = Form(...),
+    files: List[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    import json
+    batches_json = json.loads(batches_data)
+    
+    batches = []
+    for idx, batch_data in enumerate(batches_json):
+        spectro_image = base64.b64encode(await files[idx].read()).decode('utf-8')
+        
+        batch = DrossRecyclingBatch(
+            dross_type=batch_data['dross_type'],
+            quantity_sent=batch_data['quantity_sent'],
+            high_lead_recovered=batch_data['high_lead_recovered'],
+            spectro_image=spectro_image
+        )
+        batches.append(batch)
+    
+    entry = DrossRecyclingEntry(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        batches=batches
+    )
+    
+    doc = entry.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    for batch in doc['batches']:
+        batch['timestamp'] = batch['timestamp'].isoformat()
+    
+    await db.dross_recycling_entries.insert_one(doc)
+    return {"id": entry.id, "message": "Dross recycling entry created successfully"}
+
+@api_router.get("/dross-recycling/entries")
+async def get_dross_recycling_entries(current_user: dict = Depends(get_current_user)):
+    entries = await db.dross_recycling_entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    
+    for entry in entries:
+        if isinstance(entry['timestamp'], str):
+            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        for batch in entry.get('batches', []):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            batch.pop('spectro_image', None)
+    
+    return entries
+
+@api_router.get("/dross-recycling/entries/{entry_id}")
+async def get_dross_recycling_entry_detail(entry_id: str, current_user: dict = Depends(get_current_user)):
+    entry = await db.dross_recycling_entries.find_one({"id": entry_id}, {"_id": 0})
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    if isinstance(entry['timestamp'], str):
+        entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+    
+    for batch in entry.get('batches', []):
+        if isinstance(batch.get('timestamp'), str):
+            batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+    
+    return entry
+
+@api_router.delete("/admin/dross-recycling/{entry_id}")
+async def delete_dross_recycling_entry(entry_id: str, admin: dict = Depends(require_admin)):
+    result = await db.dross_recycling_entries.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Dross recycling entry deleted successfully"}
+
 @api_router.get("/entries")
 async def get_entries(current_user: dict = Depends(get_current_user)):
     entries = await db.entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
@@ -400,7 +471,6 @@ async def get_entries(current_user: dict = Depends(get_current_user)):
         if isinstance(entry['timestamp'], str):
             entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
         
-        # Remove images from batch data for list view
         for batch in entry.get('batches', []):
             if isinstance(batch.get('timestamp'), str):
                 batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
@@ -429,11 +499,36 @@ async def get_entry_detail(entry_id: str, current_user: dict = Depends(get_curre
     
     return entry
 
+@api_router.get("/dross")
+async def get_dross_data(current_user: dict = Depends(get_current_user)):
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
+    
+    dross_data = []
+    for entry in refining_entries:
+        if isinstance(entry['timestamp'], str):
+            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        for batch_idx, batch in enumerate(entry.get('batches', []), 1):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            
+            dross_data.append({
+                'entry_id': entry['id'],
+                'user_name': entry['user_name'],
+                'timestamp': entry['timestamp'],
+                'batch_number': batch_idx,
+                'initial_dross_kg': batch['initial_dross_kg'],
+                'dross_2nd_kg': batch['dross_2nd_kg'],
+                'dross_3rd_kg': batch['dross_3rd_kg'],
+                'total_dross': batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+            })
+    
+    dross_data.sort(key=lambda x: x['timestamp'], reverse=True)
+    return dross_data
+
+# Sales
 @api_router.post("/sales", response_model=SaleEntry)
-async def create_sale(
-    sale_data: SaleCreate,
-    current_user: dict = Depends(get_current_user)
-):
+async def create_sale(sale_data: SaleCreate, current_user: dict = Depends(get_current_user)):
     sale = SaleEntry(
         user_id=current_user["id"],
         user_name=current_user["name"],
@@ -457,9 +552,16 @@ async def get_sales(current_user: dict = Depends(get_current_user)):
     
     return sales
 
+@api_router.delete("/admin/sales/{sale_id}")
+async def delete_sale(sale_id: str, admin: dict = Depends(require_admin)):
+    result = await db.sales.delete_one({"id": sale_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Sale not found")
+    return {"message": "Sale deleted successfully"}
+
+# Summary
 @api_router.get("/summary", response_model=SummaryStats)
 async def get_summary(current_user: dict = Depends(get_current_user)):
-    # Calculate total pure lead from refining
     refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
     total_pure_lead = sum(
         batch['pure_lead_kg']
@@ -467,14 +569,12 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
-    # Calculate total dross from refining
     total_dross = sum(
         batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
         for entry in refining_entries
         for batch in entry.get('batches', [])
     )
     
-    # Calculate total high lead from dross recycling
     dross_recycling_entries = await db.dross_recycling_entries.find({}, {"_id": 0}).to_list(10000)
     total_high_lead = sum(
         batch['high_lead_recovered']
@@ -482,31 +582,24 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
-    # Calculate total remelted lead from recycling (actual quantity received)
     recycling_entries = await db.entries.find({"entry_type": "recycling"}, {"_id": 0}).to_list(10000)
     total_remelted_lead = sum(
-        batch.get('quantity_received', 0)  # Use actual received quantity
+        batch.get('quantity_received', 0)
         for entry in recycling_entries
         for batch in entry.get('batches', [])
     )
     
-    # Calculate total receivable (expected - received)
     total_receivable = sum(
         batch.get('receivable_kg', 0)
         for entry in recycling_entries
         for batch in entry.get('batches', [])
     )
     
-    # Calculate total sold
     sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
     total_sold = sum(sale['quantity_kg'] for sale in sales)
     
-    # Calculate remelted lead in stock (received - sold from recycling)
-    # For now, we'll assume all sales reduce the remelted stock first
     remelted_lead_in_stock = max(0, total_remelted_lead - total_sold)
-    
-    # Calculate available stock (pure lead + remelted in stock)
-    available_stock = total_pure_lead + remelted_lead_in_stock
+    available_stock = total_pure_lead + remelted_lead_in_stock + total_high_lead
     
     return SummaryStats(
         total_pure_lead_manufactured=round(total_pure_lead, 2),
@@ -521,15 +614,9 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/dross/export/excel")
 async def export_dross_excel(current_user: dict = Depends(get_current_user)):
-    # Get all dross data
     refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
     
-    # Get dross recoveries
-    recoveries = await db.dross_recoveries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
-    
     wb = Workbook()
-    
-    # Dross Data Sheet
     ws_dross = wb.active
     ws_dross.title = "Dross Data"
     
@@ -566,38 +653,35 @@ async def export_dross_excel(current_user: dict = Depends(get_current_user)):
             ws_dross.cell(row=row_num, column=8, value=total_dross)
             row_num += 1
     
-    # Dross Recovery Sheet
-    if recoveries:
-        ws_recovery = wb.create_sheet("Dross Recovery")
-        headers_recovery = [
-            "Date", "Time", "Employee", "Batch #",
-            "Initial Dross (kg)", "2nd Dross (kg)", "3rd Dross (kg)", 
-            "Total Dross (kg)", "Pure Lead Recovered (kg)", "Recovery %"
+    dross_recycling = await db.dross_recycling_entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
+    if dross_recycling:
+        ws_high_lead = wb.create_sheet("HIGH LEAD Recovery")
+        headers_high = [
+            "Date", "Time", "Employee",
+            "Dross Type", "Quantity Sent (kg)", "HIGH LEAD Recovered (kg)"
         ]
         
-        for col_num, header in enumerate(headers_recovery, 1):
-            cell = ws_recovery.cell(row=1, column=col_num, value=header)
-            cell.fill = header_fill
+        for col_num, header in enumerate(headers_high, 1):
+            cell = ws_high_lead.cell(row=1, column=col_num, value=header)
+            cell.fill = PatternFill(start_color="EAB308", end_color="EAB308", fill_type="solid")
             cell.font = header_font
             cell.alignment = Alignment(horizontal="center", vertical="center")
         
-        for row_num, recovery in enumerate(recoveries, 2):
-            timestamp = recovery['timestamp']
+        row_num = 2
+        for entry in dross_recycling:
+            timestamp = entry['timestamp']
             if isinstance(timestamp, str):
                 timestamp = datetime.fromisoformat(timestamp)
             
-            ws_recovery.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
-            ws_recovery.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
-            ws_recovery.cell(row=row_num, column=3, value=recovery['user_name'])
-            ws_recovery.cell(row=row_num, column=4, value=f"Batch {recovery['batch_number']}")
-            ws_recovery.cell(row=row_num, column=5, value=recovery['initial_dross_kg'])
-            ws_recovery.cell(row=row_num, column=6, value=recovery['dross_2nd_kg'])
-            ws_recovery.cell(row=row_num, column=7, value=recovery['dross_3rd_kg'])
-            ws_recovery.cell(row=row_num, column=8, value=recovery['total_dross'])
-            ws_recovery.cell(row=row_num, column=9, value=recovery['pure_lead_recovered'])
-            ws_recovery.cell(row=row_num, column=10, value=recovery['recovery_percentage'])
+            for batch in entry.get('batches', []):
+                ws_high_lead.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
+                ws_high_lead.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
+                ws_high_lead.cell(row=row_num, column=3, value=entry['user_name'])
+                ws_high_lead.cell(row=row_num, column=4, value=batch['dross_type'].upper())
+                ws_high_lead.cell(row=row_num, column=5, value=batch['quantity_sent'])
+                ws_high_lead.cell(row=row_num, column=6, value=batch['high_lead_recovered'])
+                row_num += 1
     
-    # Auto-adjust column widths for all sheets
     for ws in wb.worksheets:
         for column in ws.columns:
             max_length = 0
@@ -627,7 +711,6 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
     
     wb = Workbook()
     
-    # Refining Sheet
     ws_refining = wb.active
     ws_refining.title = "Refining"
     
@@ -667,7 +750,6 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
                 ws_refining.cell(row=row_num, column=10, value=batch['pure_lead_kg'])
                 row_num += 1
     
-    # Recycling Sheet
     ws_recycling = wb.create_sheet("Recycling")
     headers_recycling = [
         "Date", "Time", "Employee", "Batch #",
@@ -701,7 +783,6 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
                 ws_recycling.cell(row=row_num, column=10, value=batch.get('recovery_percent', 0))
                 row_num += 1
     
-    # Sales Sheet
     ws_sales = wb.create_sheet("Sales")
     headers_sales = ["Date", "Time", "Employee", "Party Name", "Quantity Sold (kg)"]
     
@@ -723,7 +804,6 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
         ws_sales.cell(row=row_num, column=4, value=sale['party_name'])
         ws_sales.cell(row=row_num, column=5, value=sale['quantity_kg'])
     
-    # Auto-adjust column widths for all sheets
     for ws in [ws_refining, ws_recycling, ws_sales]:
         for column in ws.columns:
             max_length = 0
@@ -746,103 +826,6 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=leadtrack_report.xlsx"}
     )
-
-@api_router.post("/dross-recycling/entries")
-async def create_dross_recycling_entry(
-    batches_data: str = Form(...),
-    files: List[UploadFile] = File(...),
-    current_user: dict = Depends(get_current_user)
-):
-    import json
-    batches_json = json.loads(batches_data)
-    
-    batches = []
-    for idx, batch_data in enumerate(batches_json):
-        # Compress and encode spectro image
-        spectro_image = base64.b64encode(await files[idx].read()).decode('utf-8')
-        
-        batch = DrossRecyclingBatch(
-            dross_type=batch_data['dross_type'],
-            quantity_sent=batch_data['quantity_sent'],
-            high_lead_recovered=batch_data['high_lead_recovered'],
-            spectro_image=spectro_image
-        )
-        batches.append(batch)
-    
-    entry = DrossRecyclingEntry(
-        user_id=current_user["id"],
-        user_name=current_user["name"],
-        batches=batches
-    )
-    
-    doc = entry.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    for batch in doc['batches']:
-        batch['timestamp'] = batch['timestamp'].isoformat()
-    
-    await db.dross_recycling_entries.insert_one(doc)
-    return {"id": entry.id, "message": "Dross recycling entry created successfully"}
-
-@api_router.get("/dross-recycling/entries")
-async def get_dross_recycling_entries(current_user: dict = Depends(get_current_user)):
-    entries = await db.dross_recycling_entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
-    
-    for entry in entries:
-        if isinstance(entry['timestamp'], str):
-            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
-        
-        # Remove images from list view for performance
-        for batch in entry.get('batches', []):
-            if isinstance(batch.get('timestamp'), str):
-                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
-            batch.pop('spectro_image', None)
-    
-    return entries
-
-@api_router.get("/dross-recycling/entries/{entry_id}")
-async def get_dross_recycling_entry_detail(entry_id: str, current_user: dict = Depends(get_current_user)):
-    entry = await db.dross_recycling_entries.find_one({"id": entry_id}, {"_id": 0})
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    
-    if isinstance(entry['timestamp'], str):
-        entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
-    
-    for batch in entry.get('batches', []):
-        if isinstance(batch.get('timestamp'), str):
-            batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
-    
-    return entry
-
-@api_router.get("/dross")
-async def get_dross_data(current_user: dict = Depends(get_current_user)):
-    # Get all refining entries with dross data
-    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
-    
-    dross_data = []
-    for entry in refining_entries:
-        if isinstance(entry['timestamp'], str):
-            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
-        
-        for batch_idx, batch in enumerate(entry.get('batches', []), 1):
-            if isinstance(batch.get('timestamp'), str):
-                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
-            
-            dross_data.append({
-                'entry_id': entry['id'],
-                'user_name': entry['user_name'],
-                'timestamp': entry['timestamp'],
-                'batch_number': batch_idx,
-                'initial_dross_kg': batch['initial_dross_kg'],
-                'dross_2nd_kg': batch['dross_2nd_kg'],
-                'dross_3rd_kg': batch['dross_3rd_kg'],
-                'total_dross': batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
-            })
-    
-    # Sort by timestamp descending
-    dross_data.sort(key=lambda x: x['timestamp'], reverse=True)
-    
-    return dross_data
 
 app.include_router(api_router)
 
