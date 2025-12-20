@@ -33,27 +33,36 @@ export default function HomePage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-slate-900" data-testid="home-title">LeadTrack Pro</h1>
             <p className="text-base text-slate-600">Welcome, {user.name}</p>
           </div>
-          <Button
-            onClick={onLogout}
-            data-testid="logout-button"
-            className="h-12 px-6 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-bold"
-          >
-            <LogOut className="w-5 h-5 mr-2" />
-            Logout
-          </Button>
+          <div className="flex gap-3">
+            {user.name === 'TT' && (
+              <Button
+                onClick={() => navigate('/control-panel')}
+                data-testid="control-panel-button"
+                className="h-12 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold"
+              >
+                <Settings className="w-5 h-5 mr-2" />
+                Control Panel
+              </Button>
+            )}
+            <Button
+              onClick={onLogout}
+              data-testid="logout-button"
+              className="h-12 px-6 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-bold"
+            >
+              <LogOut className="w-5 h-5 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Summary Stats */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-2">
@@ -106,7 +115,7 @@ export default function HomePage({ user, onLogout }) {
             <p className="text-3xl font-bold text-teal-700" data-testid="remelted-stock-stat">
               {loading ? '...' : `${stats?.remelted_lead_in_stock || 0} kg`}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Remelted lead available</p>
+            <p className="text-xs text-slate-500 mt-1">Remelted available</p>
           </Card>
 
           {user.name === 'TT' && (
@@ -118,7 +127,7 @@ export default function HomePage({ user, onLogout }) {
               <p className="text-3xl font-bold text-blue-700" data-testid="receivable-stat">
                 {loading ? '...' : `${stats?.total_receivable || 0} kg`}
               </p>
-              <p className="text-xs text-blue-600 mt-1 font-semibold">TT ONLY - Scrap Battery</p>
+              <p className="text-xs text-blue-600 mt-1 font-semibold">TT ONLY</p>
             </Card>
           )}
 
@@ -144,7 +153,6 @@ export default function HomePage({ user, onLogout }) {
           </Card>
         </div>
 
-        {/* Main Options */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card
             className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-all active:scale-95"
@@ -173,11 +181,10 @@ export default function HomePage({ user, onLogout }) {
           >
             <Recycle className="w-16 h-16 text-white mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">DROSS RECYCLING</h2>
-            <p className="text-xl text-amber-50">View and track dross from refining</p>
+            <p className="text-xl text-amber-50">Process dross into HIGH LEAD</p>
           </Card>
         </div>
 
-        {/* Secondary Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Button
             onClick={() => navigate('/sales')}
