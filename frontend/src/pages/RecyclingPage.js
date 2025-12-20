@@ -427,6 +427,12 @@ export default function RecyclingPage({ user }) {
             ⚠️ {batches.length - getCompleteCount()} incomplete batch(es) will be skipped
           </div>
         )}
+        
+        {step === 2 && getCompleteCount() > 0 && (
+          <div className="text-center text-sm text-slate-600 mt-2">
+            💡 Batches can be saved with just battery input. Output details can be added later.
+          </div>
+        )}
       </div>
     </div>
   );
