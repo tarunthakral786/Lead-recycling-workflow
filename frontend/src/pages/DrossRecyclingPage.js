@@ -233,6 +233,56 @@ export default function DrossRecyclingPage({ user }) {
           </div>
         )}
       </div>
+
+      {/* Recovery Dialog */}
+      <Dialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Add Pure Lead Recovery</DialogTitle>
+          </DialogHeader>
+          {selectedDross && (
+            <div className="space-y-6 mt-4">
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-bold text-amber-700 uppercase mb-2">Batch Details</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <p><span className="font-bold">Batch:</span> {selectedDross.batch_number}</p>
+                  <p><span className="font-bold">Employee:</span> {selectedDross.user_name}</p>
+                  <p><span className="font-bold">Initial:</span> {selectedDross.initial_dross_kg} kg</p>
+                  <p><span className="font-bold">2nd:</span> {selectedDross.dross_2nd_kg} kg</p>
+                  <p><span className="font-bold">3rd:</span> {selectedDross.dross_3rd_kg} kg</p>
+                  <p><span className="font-bold">Total:</span> {selectedDross.total_dross} kg</p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="recovery" className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Pure Lead Recovered (KG)
+                </Label>
+                <Input
+                  id="recovery"
+                  data-testid="recovery-input"
+                  type="number"
+                  step="0.01"
+                  value={recoveryAmount}
+                  onChange={(e) => setRecoveryAmount(e.target.value)}
+                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+
+              <Button
+                onClick={handleSubmitRecovery}
+                data-testid="submit-recovery-button"
+                disabled={submitting}
+                className="w-full h-14 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg rounded-lg disabled:opacity-50"
+              >
+                {submitting ? 'Saving...' : 'Save Recovery'}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
