@@ -235,7 +235,7 @@ export default function RecyclingPage({ user }) {
             <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
             <div>
               <p className="text-base font-semibold text-blue-900">Auto-Calculation</p>
-              <p className="text-sm text-blue-700">PP Battery: 60.5% output | MC/SMF Battery: 58% output</p>
+              <p className="text-sm text-blue-700">Expected output will be automatically calculated based on battery type</p>
             </div>
           </div>
         </Card>
