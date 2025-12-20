@@ -379,6 +379,13 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Calculate total dross from refining
+    total_dross = sum(
+        batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+    )
+    
     # Calculate total remelted lead from recycling (actual quantity received)
     recycling_entries = await db.entries.find({"entry_type": "recycling"}, {"_id": 0}).to_list(10000)
     total_remelted_lead = sum(
@@ -411,7 +418,8 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         total_sold=round(total_sold, 2),
         available_stock=round(available_stock, 2),
         total_receivable=round(total_receivable, 2),
-        remelted_lead_in_stock=round(remelted_lead_in_stock, 2)
+        remelted_lead_in_stock=round(remelted_lead_in_stock, 2),
+        total_dross=round(total_dross, 2)
     )
 
 @api_router.get("/entries/export/excel")
