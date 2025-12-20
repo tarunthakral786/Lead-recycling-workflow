@@ -328,7 +328,7 @@ export default function RecyclingPage({ user }) {
 
                 <div>
                   <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Quantity Received After Recycling (KG)
+                    Remelted Lead Received (KG)
                   </Label>
                   <Input
                     data-testid={`quantity-received-input-${batchIndex}`}
@@ -339,6 +339,7 @@ export default function RecyclingPage({ user }) {
                     className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
                     placeholder="0.00"
                   />
+                  <p className="text-sm text-slate-500 mt-2">Enter actual remelted lead quantity received from recycling process</p>
                 </div>
 
                 {user.name === 'TT' && batch.battery_kg && batch.quantity_received && (
