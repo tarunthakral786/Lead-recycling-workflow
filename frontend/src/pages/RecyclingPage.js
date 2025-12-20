@@ -88,7 +88,8 @@ export default function RecyclingPage({ user }) {
       
       const batchesData = batches.map(batch => ({
         battery_type: batch.battery_type,
-        battery_kg: parseFloat(batch.battery_kg)
+        battery_kg: parseFloat(batch.battery_kg),
+        quantity_received: parseFloat(batch.quantity_received) || 0
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
