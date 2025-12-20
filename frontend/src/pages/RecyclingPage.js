@@ -14,6 +14,7 @@ const API = `${BACKEND_URL}/api`;
 
 export default function RecyclingPage({ user }) {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState([{
     battery_type: 'PP',
@@ -127,11 +128,18 @@ export default function RecyclingPage({ user }) {
     }
   };
 
-  const canSubmit = () => {
-    // Check if at least one batch is complete
-    return batches.some(batch => 
-      batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
-    );
+  const canProceed = (batchIndex) => {
+    const batch = batches[batchIndex];
+    if (step === 1) {
+      return batch.battery_kg && batch.battery_image;
+    } else if (step === 2) {
+      return batch.quantity_received && batch.remelted_lead_image;
+    }
+    return false;
+  };
+
+  const allBatchesCanProceed = () => {
+    return batches.every((_, index) => canProceed(index));
   };
 
   const getCompleteCount = () => {
@@ -187,7 +195,7 @@ export default function RecyclingPage({ user }) {
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-slate-900" data-testid="recycling-title">Battery Recycling</h1>
-              <p className="text-base text-slate-600">{batches.length} batch(es)</p>
+              <p className="text-base text-slate-600">{batches.length} batch(es) | Step {step}/2</p>
             </div>
           </div>
         </div>
@@ -195,6 +203,21 @@ export default function RecyclingPage({ user }) {
 
       {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Step Indicator */}
+        <div className="flex justify-center gap-4 mb-8">
+          {[1, 2].map((s) => (
+            <div
+              key={s}
+              className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${
+                step === s ? 'bg-green-600 text-white' : step > s ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500'
+              }`}
+              data-testid={`step-indicator-${s}`}
+            >
+              {s}
+            </div>
+          ))}
+        </div>
+
         {/* Info Card */}
         <Card className="bg-blue-50 border-blue-200 rounded-xl p-4 mb-6">
           <div className="flex gap-3">
@@ -222,124 +245,167 @@ export default function RecyclingPage({ user }) {
               )}
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Battery Type
-                </Label>
-                <Select
-                  value={batch.battery_type}
-                  onValueChange={(value) => handleInputChange(batchIndex, 'battery_type', value)}
-                >
-                  <SelectTrigger 
-                    className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
-                    data-testid={`battery-type-trigger-${batchIndex}`}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent data-testid={`battery-type-content-${batchIndex}`}>
-                    <SelectItem value="PP" className="text-xl">PP Battery (60.5%)</SelectItem>
-                    <SelectItem value="MC/SMF" className="text-xl">MC/SMF Battery (58%)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Battery Weight (KG)
-                </Label>
-                <Input
-                  data-testid={`battery-kg-input-${batchIndex}`}
-                  type="number"
-                  step="0.01"
-                  value={batch.battery_kg}
-                  onChange={(e) => handleInputChange(batchIndex, 'battery_kg', e.target.value)}
-                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {renderImageUpload(batchIndex, 'battery_image', 'Photo of Battery Weight')}
-
-              {/* Auto-calculated output */}
-              {batch.battery_kg && (
-                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                  <Label className="block text-sm font-bold text-green-700 uppercase tracking-wider mb-2">
-                    Remelted Lead Output (Auto-Calculated)
+            {step === 1 && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold text-slate-900" data-testid="step-title">Battery Input</h2>
+                
+                <div>
+                  <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Battery Type
                   </Label>
-                  <p className="text-4xl font-bold text-green-700" data-testid={`output-display-${batchIndex}`}>
-                    {calculateOutput(batch.battery_kg, batch.battery_type)} kg
-                  </p>
+                  <Select
+                    value={batch.battery_type}
+                    onValueChange={(value) => handleInputChange(batchIndex, 'battery_type', value)}
+                  >
+                    <SelectTrigger 
+                      className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
+                      data-testid={`battery-type-trigger-${batchIndex}`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent data-testid={`battery-type-content-${batchIndex}`}>
+                      <SelectItem value="PP" className="text-xl">PP Battery (60.5%)</SelectItem>
+                      <SelectItem value="MC/SMF" className="text-xl">MC/SMF Battery (58%)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              <div>
-                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Quantity Received After Recycling (KG)
-                </Label>
-                <Input
-                  data-testid={`quantity-received-input-${batchIndex}`}
-                  type="number"
-                  step="0.01"
-                  value={batch.quantity_received}
-                  onChange={(e) => handleInputChange(batchIndex, 'quantity_received', e.target.value)}
-                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
-                  placeholder="0.00"
-                />
+                <div>
+                  <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Battery Weight (KG)
+                  </Label>
+                  <Input
+                    data-testid={`battery-kg-input-${batchIndex}`}
+                    type="number"
+                    step="0.01"
+                    value={batch.battery_kg}
+                    onChange={(e) => handleInputChange(batchIndex, 'battery_kg', e.target.value)}
+                    className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {renderImageUpload(batchIndex, 'battery_image', 'Photo of Battery Weight')}
+
+                {/* Auto-calculated output */}
+                {batch.battery_kg && (
+                  <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                    <Label className="block text-sm font-bold text-green-700 uppercase tracking-wider mb-2">
+                      Expected Remelted Lead Output
+                    </Label>
+                    <p className="text-4xl font-bold text-green-700" data-testid={`output-display-${batchIndex}`}>
+                      {calculateOutput(batch.battery_kg, batch.battery_type)} kg
+                    </p>
+                  </div>
+                )}
               </div>
+            )}
 
-              {user.name === 'TT' && batch.battery_kg && batch.quantity_received && (
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                    <Label className="block text-sm font-bold text-blue-700 uppercase tracking-wider mb-2">
-                      Receivable Quantity (TT Only)
-                    </Label>
-                    <p className="text-3xl font-bold text-blue-700" data-testid={`receivable-display-${batchIndex}`}>
-                      {calculateReceivable(batch.battery_kg, batch.battery_type, batch.quantity_received)} kg
-                    </p>
-                  </div>
-
-                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-                    <Label className="block text-sm font-bold text-purple-700 uppercase tracking-wider mb-2">
-                      Recovery Percentage (TT Only)
-                    </Label>
-                    <p className="text-3xl font-bold text-purple-700" data-testid={`recovery-percent-display-${batchIndex}`}>
-                      {calculateRecoveryPercent(batch.battery_kg, batch.quantity_received)}%
-                    </p>
+            {step === 2 && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold text-slate-900" data-testid="step-title">Recycling Output</h2>
+                
+                <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block text-sm font-bold text-slate-500 uppercase mb-1">Battery Type</Label>
+                      <p className="text-xl font-bold text-slate-900">{batch.battery_type}</p>
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-bold text-slate-500 uppercase mb-1">Input Weight</Label>
+                      <p className="text-xl font-bold text-slate-900">{batch.battery_kg} kg</p>
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="block text-sm font-bold text-green-600 uppercase mb-1">Expected Output</Label>
+                      <p className="text-3xl font-bold text-green-600">{calculateOutput(batch.battery_kg, batch.battery_type)} kg</p>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {renderImageUpload(batchIndex, 'remelted_lead_image', 'Photo of Remelted Lead Output')}
-            </div>
+                <div>
+                  <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Quantity Received After Recycling (KG)
+                  </Label>
+                  <Input
+                    data-testid={`quantity-received-input-${batchIndex}`}
+                    type="number"
+                    step="0.01"
+                    value={batch.quantity_received}
+                    onChange={(e) => handleInputChange(batchIndex, 'quantity_received', e.target.value)}
+                    className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {user.name === 'TT' && batch.battery_kg && batch.quantity_received && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                      <Label className="block text-sm font-bold text-blue-700 uppercase tracking-wider mb-2">
+                        Scrap Battery Receivable (TT Only)
+                      </Label>
+                      <p className="text-3xl font-bold text-blue-700" data-testid={`receivable-display-${batchIndex}`}>
+                        {calculateReceivable(batch.battery_kg, batch.battery_type, batch.quantity_received)} kg
+                      </p>
+                    </div>
+
+                    <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                      <Label className="block text-sm font-bold text-purple-700 uppercase tracking-wider mb-2">
+                        Recovery Percentage (TT Only)
+                      </Label>
+                      <p className="text-3xl font-bold text-purple-700" data-testid={`recovery-percent-display-${batchIndex}`}>
+                        {calculateRecoveryPercent(batch.battery_kg, batch.quantity_received)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {renderImageUpload(batchIndex, 'remelted_lead_image', 'Photo of Remelted Lead Output')}
+              </div>
+            )}
           </Card>
         ))}
 
-        {/* Add Batch Button */}
-        <Button
-          onClick={addBatch}
-          data-testid="add-batch-button"
-          className="w-full h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg mb-6"
-        >
-          <Plus className="w-6 h-6 mr-2" />
-          Add Another Batch
-        </Button>
-
-        {/* Submit Button */}
-        <Button
-          onClick={handleSubmit}
-          data-testid="submit-entry-button"
-          disabled={!canSubmit() || loading}
-          className="w-full h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Saving...' : `Save ${getCompleteCount()} Complete Batch(es)`}
-        </Button>
-        
-        {batches.length > getCompleteCount() && getCompleteCount() > 0 && (
-          <div className="text-center text-sm text-slate-600 -mt-4">
-            {batches.length - getCompleteCount()} incomplete batch(es) will be skipped
-          </div>
-        )}
+        {/* Navigation Buttons */}
+        <div className="flex gap-4">
+          {step > 1 && (
+            <Button
+              onClick={() => setStep(step - 1)}
+              data-testid="back-step-button"
+              className="flex-1 h-16 text-xl font-bold bg-white text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 rounded-lg"
+            >
+              Back
+            </Button>
+          )}
+          {step < 2 ? (
+            <>
+              <Button
+                onClick={addBatch}
+                data-testid="add-batch-button"
+                className="flex-1 h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg"
+              >
+                <Plus className="w-6 h-6 mr-2" />
+                Add Battery Batch
+              </Button>
+              <Button
+                onClick={() => setStep(step + 1)}
+                data-testid="next-step-button"
+                disabled={!allBatchesCanProceed()}
+                className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next Step
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              data-testid="submit-entry-button"
+              disabled={!allBatchesCanProceed() || loading}
+              className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Saving...' : `Save ${batches.length} Batch(es)`}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
