@@ -118,7 +118,7 @@ export default function RecyclingPage({ user }) {
 
   const canSubmit = () => {
     return batches.every(batch => 
-      batch.battery_kg && batch.battery_image && batch.remelted_lead_image
+      batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
     );
   };
 
