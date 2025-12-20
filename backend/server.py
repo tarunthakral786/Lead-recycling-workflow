@@ -494,6 +494,108 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         total_dross=round(total_dross, 2)
     )
 
+@api_router.get("/dross/export/excel")
+async def export_dross_excel(current_user: dict = Depends(get_current_user)):
+    # Get all dross data
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
+    
+    # Get dross recoveries
+    recoveries = await db.dross_recoveries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
+    
+    wb = Workbook()
+    
+    # Dross Data Sheet
+    ws_dross = wb.active
+    ws_dross.title = "Dross Data"
+    
+    headers_dross = [
+        "Date", "Time", "Employee", "Batch #",
+        "Initial Dross (kg)", "2nd Dross (kg)", "3rd Dross (kg)", "Total Dross (kg)"
+    ]
+    
+    header_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    
+    for col_num, header in enumerate(headers_dross, 1):
+        cell = ws_dross.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    row_num = 2
+    for entry in refining_entries:
+        timestamp = entry['timestamp']
+        if isinstance(timestamp, str):
+            timestamp = datetime.fromisoformat(timestamp)
+        
+        for batch_idx, batch in enumerate(entry.get('batches', []), 1):
+            total_dross = batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+            
+            ws_dross.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
+            ws_dross.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
+            ws_dross.cell(row=row_num, column=3, value=entry['user_name'])
+            ws_dross.cell(row=row_num, column=4, value=f"Batch {batch_idx}")
+            ws_dross.cell(row=row_num, column=5, value=batch['initial_dross_kg'])
+            ws_dross.cell(row=row_num, column=6, value=batch['dross_2nd_kg'])
+            ws_dross.cell(row=row_num, column=7, value=batch['dross_3rd_kg'])
+            ws_dross.cell(row=row_num, column=8, value=total_dross)
+            row_num += 1
+    
+    # Dross Recovery Sheet
+    if recoveries:
+        ws_recovery = wb.create_sheet("Dross Recovery")
+        headers_recovery = [
+            "Date", "Time", "Employee", "Batch #",
+            "Initial Dross (kg)", "2nd Dross (kg)", "3rd Dross (kg)", 
+            "Total Dross (kg)", "Pure Lead Recovered (kg)", "Recovery %"
+        ]
+        
+        for col_num, header in enumerate(headers_recovery, 1):
+            cell = ws_recovery.cell(row=1, column=col_num, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+        
+        for row_num, recovery in enumerate(recoveries, 2):
+            timestamp = recovery['timestamp']
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp)
+            
+            ws_recovery.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
+            ws_recovery.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
+            ws_recovery.cell(row=row_num, column=3, value=recovery['user_name'])
+            ws_recovery.cell(row=row_num, column=4, value=f"Batch {recovery['batch_number']}")
+            ws_recovery.cell(row=row_num, column=5, value=recovery['initial_dross_kg'])
+            ws_recovery.cell(row=row_num, column=6, value=recovery['dross_2nd_kg'])
+            ws_recovery.cell(row=row_num, column=7, value=recovery['dross_3rd_kg'])
+            ws_recovery.cell(row=row_num, column=8, value=recovery['total_dross'])
+            ws_recovery.cell(row=row_num, column=9, value=recovery['pure_lead_recovered'])
+            ws_recovery.cell(row=row_num, column=10, value=recovery['recovery_percentage'])
+    
+    # Auto-adjust column widths for all sheets
+    for ws in wb.worksheets:
+        for column in ws.columns:
+            max_length = 0
+            column = list(column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column[0].column_letter].width = adjusted_width
+    
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=dross_data.xlsx"}
+    )
+
 @api_router.get("/entries/export/excel")
 async def export_entries_excel(current_user: dict = Depends(get_current_user)):
     entries = await db.entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
