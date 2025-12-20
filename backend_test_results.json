@@ -1,0 +1,70 @@
+{
+  "summary": {
+    "total_tests": 10,
+    "passed_tests": 10,
+    "success_rate": "100.0%",
+    "timestamp": "2025-12-20T18:28:34.469315"
+  },
+  "detailed_results": [
+    {
+      "test": "API Root Endpoint",
+      "success": true,
+      "details": "Status: 200, Message: LeadTrack Pro API",
+      "timestamp": "2025-12-20T18:28:33.542725"
+    },
+    {
+      "test": "User Registration",
+      "success": true,
+      "details": "Status: 200, User ID: 09c7bb88-7e39-446a-8852-84e6c0ca975a",
+      "timestamp": "2025-12-20T18:28:33.859130"
+    },
+    {
+      "test": "User Login",
+      "success": true,
+      "details": "Status: 200, Token received: Yes, User: Test User 182833",
+      "timestamp": "2025-12-20T18:28:34.157183"
+    },
+    {
+      "test": "Duplicate Registration Check",
+      "success": true,
+      "details": "Status: 400 (Expected: 400), Correctly rejected duplicate email",
+      "timestamp": "2025-12-20T18:28:34.200202"
+    },
+    {
+      "test": "Invalid Login Check",
+      "success": true,
+      "details": "Status: 401 (Expected: 401), Correctly rejected invalid credentials",
+      "timestamp": "2025-12-20T18:28:34.241022"
+    },
+    {
+      "test": "Create Entry",
+      "success": true,
+      "details": "Status: 200, Entry ID: 25d63d73-184c-4964-bc51-aeec26d2068e, Lead Ingot: 100.5kg",
+      "timestamp": "2025-12-20T18:28:34.296973"
+    },
+    {
+      "test": "Get Entries List",
+      "success": true,
+      "details": "Status: 200, Entries count: 1, First entry user: Test User 182833",
+      "timestamp": "2025-12-20T18:28:34.338815"
+    },
+    {
+      "test": "Get Entry Detail",
+      "success": true,
+      "details": "Status: 200, Entry ID: 25d63d73-184c-4964-bc51-aeec26d2068e, Has images: Yes",
+      "timestamp": "2025-12-20T18:28:34.379001"
+    },
+    {
+      "test": "Excel Export",
+      "success": true,
+      "details": "Status: 200, Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, File size: 5246 bytes, Valid Excel file",
+      "timestamp": "2025-12-20T18:28:34.431476"
+    },
+    {
+      "test": "Unauthorized Access Check",
+      "success": true,
+      "details": "Status: 403 (Expected: 403), Correctly rejected unauthorized access",
+      "timestamp": "2025-12-20T18:28:34.468535"
+    }
+  ]
+}
