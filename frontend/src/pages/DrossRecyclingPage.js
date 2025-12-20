@@ -40,12 +40,14 @@ export default function DrossRecyclingPage({ user }) {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [drossRes, recoveryRes] = await Promise.all([
+      const [drossRes, recoveryRes, recyclingRes] = await Promise.all([
         axios.get(`${API}/dross`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        axios.get(`${API}/dross/recoveries`, { headers: { 'Authorization': `Bearer ${token}` } })
+        axios.get(`${API}/dross/recoveries`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${API}/dross-recycling/entries`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       setDrossData(drossRes.data);
       setRecoveries(recoveryRes.data);
+      setRecyclingEntries(recyclingRes.data);
     } catch (error) {
       toast.error('Failed to load dross data');
     } finally {
