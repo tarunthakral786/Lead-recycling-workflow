@@ -397,15 +397,20 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
     total_sold = sum(sale['quantity_kg'] for sale in sales)
     
-    # Calculate available stock (pure lead + actual remelted - sold)
-    available_stock = total_pure_lead + total_remelted_lead - total_sold
+    # Calculate remelted lead in stock (received - sold from recycling)
+    # For now, we'll assume all sales reduce the remelted stock first
+    remelted_lead_in_stock = max(0, total_remelted_lead - total_sold)
+    
+    # Calculate available stock (pure lead + remelted in stock)
+    available_stock = total_pure_lead + remelted_lead_in_stock
     
     return SummaryStats(
         total_pure_lead_manufactured=round(total_pure_lead, 2),
         total_remelted_lead=round(total_remelted_lead, 2),
         total_sold=round(total_sold, 2),
         available_stock=round(available_stock, 2),
-        total_receivable=round(total_receivable, 2)
+        total_receivable=round(total_receivable, 2),
+        remelted_lead_in_stock=round(remelted_lead_in_stock, 2)
     )
 
 @api_router.get("/entries/export/excel")
