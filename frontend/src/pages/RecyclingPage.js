@@ -332,8 +332,14 @@ export default function RecyclingPage({ user }) {
           disabled={!canSubmit() || loading}
           className="w-full h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : `Save ${batches.length} Batch(es)`}
+          {loading ? 'Saving...' : `Save ${getCompleteCount()} Complete Batch(es)`}
         </Button>
+        
+        {batches.length > getCompleteCount() && getCompleteCount() > 0 && (
+          <div className="text-center text-sm text-slate-600 -mt-4">
+            {batches.length - getCompleteCount()} incomplete batch(es) will be skipped
+          </div>
+        )}
       </div>
     </div>
   );
