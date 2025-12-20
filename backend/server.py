@@ -157,6 +157,7 @@ class SummaryStats(BaseModel):
     total_sold: float
     available_stock: float
     total_receivable: float  # TT only - scrap battery receivable
+    remelted_lead_in_stock: float  # Remelted lead available
 
 # Routes
 @api_router.get("/")
