@@ -403,7 +403,8 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         total_pure_lead_manufactured=round(total_pure_lead, 2),
         total_remelted_lead=round(total_remelted_lead, 2),
         total_sold=round(total_sold, 2),
-        available_stock=round(available_stock, 2)
+        available_stock=round(available_stock, 2),
+        total_receivable=round(total_receivable, 2)
     )
 
 @api_router.get("/entries/export/excel")
