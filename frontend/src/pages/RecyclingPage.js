@@ -255,6 +255,43 @@ export default function RecyclingPage({ user }) {
                 </div>
               )}
 
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Quantity Received After Recycling (KG)
+                </Label>
+                <Input
+                  data-testid={`quantity-received-input-${batchIndex}`}
+                  type="number"
+                  step="0.01"
+                  value={batch.quantity_received}
+                  onChange={(e) => handleInputChange(batchIndex, 'quantity_received', e.target.value)}
+                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              {user.name === 'TT' && batch.battery_kg && batch.quantity_received && (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                    <Label className="block text-sm font-bold text-blue-700 uppercase tracking-wider mb-2">
+                      Receivable Quantity (TT Only)
+                    </Label>
+                    <p className="text-3xl font-bold text-blue-700" data-testid={`receivable-display-${batchIndex}`}>
+                      {calculateReceivable(batch.battery_kg, batch.battery_type, batch.quantity_received)} kg
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                    <Label className="block text-sm font-bold text-purple-700 uppercase tracking-wider mb-2">
+                      Recovery Percentage (TT Only)
+                    </Label>
+                    <p className="text-3xl font-bold text-purple-700" data-testid={`recovery-percent-display-${batchIndex}`}>
+                      {calculateRecoveryPercent(batch.battery_kg, batch.quantity_received)}%
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {renderImageUpload(batchIndex, 'remelted_lead_image', 'Photo of Remelted Lead Output')}
             </div>
           </Card>
