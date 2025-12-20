@@ -223,6 +223,21 @@ async def get_dross_recoveries(current_user: dict = Depends(get_current_user)):
     
     return recoveries
 
+class DrossRecyclingBatch(BaseModel):
+    dross_type: str  # "initial", "2nd", "3rd"
+    quantity_sent: float  # kg sent for recycling
+    high_lead_recovered: float  # kg of high lead recovered
+    spectro_image: str  # base64 image
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DrossRecyclingEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    batches: List[DrossRecyclingBatch]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class SummaryStats(BaseModel):
     total_pure_lead_manufactured: float
     total_remelted_lead: float
@@ -231,6 +246,7 @@ class SummaryStats(BaseModel):
     total_receivable: float  # TT only - scrap battery receivable
     remelted_lead_in_stock: float  # Remelted lead available
     total_dross: float  # Total dross from refining
+    total_high_lead: float  # Total high lead from dross recycling
 
 # Routes
 @api_router.get("/")
