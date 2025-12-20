@@ -365,10 +365,10 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
-    # Calculate total remelted lead from recycling
+    # Calculate total remelted lead from recycling (actual quantity received)
     recycling_entries = await db.entries.find({"entry_type": "recycling"}, {"_id": 0}).to_list(10000)
     total_remelted_lead = sum(
-        batch['remelted_lead_kg']
+        batch.get('quantity_received', 0)  # Use actual received quantity
         for entry in recycling_entries
         for batch in entry.get('batches', [])
     )
@@ -377,7 +377,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
     total_sold = sum(sale['quantity_kg'] for sale in sales)
     
-    # Calculate available stock
+    # Calculate available stock (pure lead + actual remelted - sold)
     available_stock = total_pure_lead + total_remelted_lead - total_sold
     
     return SummaryStats(
