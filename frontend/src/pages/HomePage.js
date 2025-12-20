@@ -73,6 +73,7 @@ export default function HomePage({ user, onLogout }) {
             <p className="text-3xl font-bold text-slate-900" data-testid="remelted-stat">
               {loading ? '...' : `${stats?.total_remelted_lead || 0} kg`}
             </p>
+            <p className="text-xs text-slate-500 mt-1">Actual received from recycling</p>
           </Card>
 
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
