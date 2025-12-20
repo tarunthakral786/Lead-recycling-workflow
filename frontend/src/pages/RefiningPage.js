@@ -55,20 +55,23 @@ export default function RefiningPage({ user }) {
     }
   };
 
-  const handleFileChange = (batchIndex, field, file) => {
+  const handleFileChange = async (batchIndex, field, file) => {
+    if (!file) return;
+    
+    // Compress image before storing
+    const compressedFile = await compressImage(file);
+    
     const newBatches = [...batches];
-    newBatches[batchIndex][field] = file;
+    newBatches[batchIndex][field] = compressedFile;
     setBatches(newBatches);
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newPreviews = [...imagePreviews];
-        newPreviews[batchIndex] = { ...newPreviews[batchIndex], [field]: reader.result };
-        setImagePreviews(newPreviews);
-      };
-      reader.readAsDataURL(file);
-    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const newPreviews = [...imagePreviews];
+      newPreviews[batchIndex] = { ...newPreviews[batchIndex], [field]: reader.result };
+      setImagePreviews(newPreviews);
+    };
+    reader.readAsDataURL(compressedFile);
   };
 
   const handleInputChange = (batchIndex, field, value) => {
