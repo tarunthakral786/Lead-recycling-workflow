@@ -54,7 +54,7 @@ export default function HomePage({ user, onLogout }) {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-2">
               <FlaskConical className="w-8 h-8 text-blue-600" />
@@ -63,6 +63,17 @@ export default function HomePage({ user, onLogout }) {
             <p className="text-3xl font-bold text-slate-900" data-testid="pure-lead-stat">
               {loading ? '...' : `${stats?.total_pure_lead_manufactured || 0} kg`}
             </p>
+          </Card>
+
+          <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <Recycle className="w-8 h-8 text-amber-600" />
+              <span className="text-sm font-bold text-slate-500 uppercase">Total Dross</span>
+            </div>
+            <p className="text-3xl font-bold text-amber-700" data-testid="dross-stat">
+              {loading ? '...' : `${stats?.total_dross || 0} kg`}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">From refining</p>
           </Card>
 
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
