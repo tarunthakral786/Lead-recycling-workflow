@@ -385,6 +385,13 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Calculate total receivable (expected - received)
+    total_receivable = sum(
+        batch.get('receivable_kg', 0)
+        for entry in recycling_entries
+        for batch in entry.get('batches', [])
+    )
+    
     # Calculate total sold
     sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
     total_sold = sum(sale['quantity_kg'] for sale in sales)
