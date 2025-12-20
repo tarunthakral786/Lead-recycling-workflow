@@ -226,7 +226,7 @@ export default function DrossRecyclingPage({ user }) {
                       </div>
                     </div>
 
-                    {recovery ? (
+                    {recovery && (
                       <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -239,15 +239,6 @@ export default function DrossRecyclingPage({ user }) {
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <Button
-                        onClick={() => handleAddRecovery(item)}
-                        data-testid={`add-recovery-${index}`}
-                        className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg"
-                      >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Add Pure Lead Recovery
-                      </Button>
                     )}
                   </div>
                 </Card>
