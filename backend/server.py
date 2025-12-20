@@ -147,9 +147,25 @@ class SaleEntry(BaseModel):
     quantity_kg: float
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class SaleCreate(BaseModel):
-    party_name: str
-    quantity_kg: float
+class DrossRecovery(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dross_entry_id: str
+    batch_number: int
+    user_id: str
+    user_name: str
+    initial_dross_kg: float
+    dross_2nd_kg: float
+    dross_3rd_kg: float
+    total_dross: float
+    pure_lead_recovered: float
+    recovery_percentage: float  # (recovered / total_dross) * 100
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DrossRecoveryCreate(BaseModel):
+    dross_entry_id: str
+    batch_number: int
+    pure_lead_recovered: float
 
 class SummaryStats(BaseModel):
     total_pure_lead_manufactured: float
