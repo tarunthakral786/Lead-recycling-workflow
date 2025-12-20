@@ -2,13 +2,25 @@ import { useState, useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
+import HomePage from "@/pages/HomePage";
+import RefiningPage from "@/pages/RefiningPage";
+import RecyclingPage from "@/pages/RecyclingPage";
 import HistoryPage from "@/pages/HistoryPage";
+import SalesPage from "@/pages/SalesPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
-  const [user, setUser] = useState({ id: 'preview', name: 'Preview User', email: 'preview@demo.com' });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, []);
 
   const handleLogin = (token, userData) => {
     localStorage.setItem('token', token);
@@ -22,6 +34,12 @@ function App() {
     setUser(null);
   };
 
+  if (loading) {
+    return <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+      <div className="text-2xl font-bold text-slate-700">Loading...</div>
+    </div>;
+  }
+
   return (
     <div className="App">
       <Toaster position="top-center" richColors />
@@ -29,15 +47,27 @@ function App() {
         <Routes>
           <Route 
             path="/login" 
-            element={<LoginPage onLogin={handleLogin} />} 
+            element={!user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" />} 
           />
           <Route 
             path="/" 
-            element={<DashboardPage user={user} onLogout={handleLogout} />} 
+            element={user ? <HomePage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/refining" 
+            element={user ? <RefiningPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/recycling" 
+            element={user ? <RecyclingPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
             path="/history" 
-            element={<HistoryPage user={user} onLogout={handleLogout} />} 
+            element={user ? <HistoryPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/sales" 
+            element={user ? <SalesPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
         </Routes>
       </BrowserRouter>

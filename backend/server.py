@@ -95,42 +95,64 @@ class TokenResponse(BaseModel):
     token_type: str
     user: UserResponse
 
-class Entry(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    user_name: str
-    
-    # Lead ingot inputs
+class RefiningBatch(BaseModel):
     lead_ingot_kg: float
     lead_ingot_pieces: int
-    lead_ingot_image: str  # base64
-    
-    # Dross inputs
+    lead_ingot_image: str
     initial_dross_kg: float
     initial_dross_image: str
     dross_2nd_kg: float
     dross_2nd_image: str
     dross_3rd_kg: float
     dross_3rd_image: str
-    
-    # Final output
     pure_lead_kg: float
     pure_lead_image: str
-    
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class EntryResponse(BaseModel):
-    id: str
+class RefiningEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     user_name: str
-    lead_ingot_kg: float
-    lead_ingot_pieces: int
-    initial_dross_kg: float
-    dross_2nd_kg: float
-    dross_3rd_kg: float
-    pure_lead_kg: float
-    timestamp: datetime
+    entry_type: str = "refining"
+    batches: List[RefiningBatch]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RecyclingBatch(BaseModel):
+    battery_type: str  # "PP" or "MC/SMF"
+    battery_kg: float
+    battery_image: str
+    remelted_lead_kg: float  # Auto-calculated
+    remelted_lead_image: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RecyclingEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    entry_type: str = "recycling"
+    batches: List[RecyclingBatch]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SaleEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    party_name: str
+    quantity_kg: float
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SaleCreate(BaseModel):
+    party_name: str
+    quantity_kg: float
+
+class SummaryStats(BaseModel):
+    total_pure_lead_manufactured: float
+    total_remelted_lead: float
+    total_sold: float
+    available_stock: float
 
 # Routes
 @api_router.get("/")
@@ -139,7 +161,6 @@ async def root():
 
 @api_router.post("/auth/register", response_model=UserResponse)
 async def register(user_data: UserCreate):
-    # Check if user exists
     existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -169,68 +190,115 @@ async def login(credentials: UserLogin):
         user=UserResponse(id=user["id"], name=user["name"], email=user["email"])
     )
 
-@api_router.post("/entries", response_model=EntryResponse)
-async def create_entry(
-    lead_ingot_kg: float = Form(...),
-    lead_ingot_pieces: int = Form(...),
-    lead_ingot_image: UploadFile = File(...),
-    initial_dross_kg: float = Form(...),
-    initial_dross_image: UploadFile = File(...),
-    dross_2nd_kg: float = Form(...),
-    dross_2nd_image: UploadFile = File(...),
-    dross_3rd_kg: float = Form(...),
-    dross_3rd_image: UploadFile = File(...),
-    pure_lead_kg: float = Form(...),
-    pure_lead_image: UploadFile = File(...),
+@api_router.post("/refining/entries")
+async def create_refining_entry(
+    batches_data: str = Form(...),
+    files: List[UploadFile] = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    # Convert images to base64
-    lead_ingot_img_data = base64.b64encode(await lead_ingot_image.read()).decode('utf-8')
-    initial_dross_img_data = base64.b64encode(await initial_dross_image.read()).decode('utf-8')
-    dross_2nd_img_data = base64.b64encode(await dross_2nd_image.read()).decode('utf-8')
-    dross_3rd_img_data = base64.b64encode(await dross_3rd_image.read()).decode('utf-8')
-    pure_lead_img_data = base64.b64encode(await pure_lead_image.read()).decode('utf-8')
+    import json
+    batches_json = json.loads(batches_data)
     
-    entry = Entry(
+    # Process images
+    file_idx = 0
+    batches = []
+    
+    for batch_data in batches_json:
+        batch = RefiningBatch(
+            lead_ingot_kg=batch_data['lead_ingot_kg'],
+            lead_ingot_pieces=batch_data['lead_ingot_pieces'],
+            lead_ingot_image=base64.b64encode(await files[file_idx].read()).decode('utf-8'),
+            initial_dross_kg=batch_data['initial_dross_kg'],
+            initial_dross_image=base64.b64encode(await files[file_idx + 1].read()).decode('utf-8'),
+            dross_2nd_kg=batch_data['dross_2nd_kg'],
+            dross_2nd_image=base64.b64encode(await files[file_idx + 2].read()).decode('utf-8'),
+            dross_3rd_kg=batch_data['dross_3rd_kg'],
+            dross_3rd_image=base64.b64encode(await files[file_idx + 3].read()).decode('utf-8'),
+            pure_lead_kg=batch_data['pure_lead_kg'],
+            pure_lead_image=base64.b64encode(await files[file_idx + 4].read()).decode('utf-8')
+        )
+        batches.append(batch)
+        file_idx += 5
+    
+    entry = RefiningEntry(
         user_id=current_user["id"],
         user_name=current_user["name"],
-        lead_ingot_kg=lead_ingot_kg,
-        lead_ingot_pieces=lead_ingot_pieces,
-        lead_ingot_image=lead_ingot_img_data,
-        initial_dross_kg=initial_dross_kg,
-        initial_dross_image=initial_dross_img_data,
-        dross_2nd_kg=dross_2nd_kg,
-        dross_2nd_image=dross_2nd_img_data,
-        dross_3rd_kg=dross_3rd_kg,
-        dross_3rd_image=dross_3rd_img_data,
-        pure_lead_kg=pure_lead_kg,
-        pure_lead_image=pure_lead_img_data
+        batches=batches
     )
     
     doc = entry.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
-    await db.entries.insert_one(doc)
+    for batch in doc['batches']:
+        batch['timestamp'] = batch['timestamp'].isoformat()
     
-    return EntryResponse(
-        id=entry.id,
-        user_id=entry.user_id,
-        user_name=entry.user_name,
-        lead_ingot_kg=entry.lead_ingot_kg,
-        lead_ingot_pieces=entry.lead_ingot_pieces,
-        initial_dross_kg=entry.initial_dross_kg,
-        dross_2nd_kg=entry.dross_2nd_kg,
-        dross_3rd_kg=entry.dross_3rd_kg,
-        pure_lead_kg=entry.pure_lead_kg,
-        timestamp=entry.timestamp
-    )
+    await db.entries.insert_one(doc)
+    return {"id": entry.id, "message": "Refining entry created successfully"}
 
-@api_router.get("/entries", response_model=List[EntryResponse])
+@api_router.post("/recycling/entries")
+async def create_recycling_entry(
+    batches_data: str = Form(...),
+    files: List[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    import json
+    batches_json = json.loads(batches_data)
+    
+    file_idx = 0
+    batches = []
+    
+    for batch_data in batches_json:
+        # Auto-calculate remelted lead based on battery type
+        battery_kg = batch_data['battery_kg']
+        battery_type = batch_data['battery_type']
+        
+        if battery_type == "PP":
+            remelted_lead_kg = battery_kg * 0.605
+        else:  # MC/SMF
+            remelted_lead_kg = battery_kg * 0.58
+        
+        batch = RecyclingBatch(
+            battery_type=battery_type,
+            battery_kg=battery_kg,
+            battery_image=base64.b64encode(await files[file_idx].read()).decode('utf-8'),
+            remelted_lead_kg=round(remelted_lead_kg, 2),
+            remelted_lead_image=base64.b64encode(await files[file_idx + 1].read()).decode('utf-8')
+        )
+        batches.append(batch)
+        file_idx += 2
+    
+    entry = RecyclingEntry(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        batches=batches
+    )
+    
+    doc = entry.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    for batch in doc['batches']:
+        batch['timestamp'] = batch['timestamp'].isoformat()
+    
+    await db.entries.insert_one(doc)
+    return {"id": entry.id, "message": "Recycling entry created successfully"}
+
+@api_router.get("/entries")
 async def get_entries(current_user: dict = Depends(get_current_user)):
-    entries = await db.entries.find({}, {"_id": 0, "lead_ingot_image": 0, "initial_dross_image": 0, "dross_2nd_image": 0, "dross_3rd_image": 0, "pure_lead_image": 0}).sort("timestamp", -1).to_list(1000)
+    entries = await db.entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     
     for entry in entries:
         if isinstance(entry['timestamp'], str):
             entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        # Remove images from batch data for list view
+        for batch in entry.get('batches', []):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            batch.pop('lead_ingot_image', None)
+            batch.pop('initial_dross_image', None)
+            batch.pop('dross_2nd_image', None)
+            batch.pop('dross_3rd_image', None)
+            batch.pop('pure_lead_image', None)
+            batch.pop('battery_image', None)
+            batch.pop('remelted_lead_image', None)
     
     return entries
 
@@ -243,65 +311,184 @@ async def get_entry_detail(entry_id: str, current_user: dict = Depends(get_curre
     if isinstance(entry['timestamp'], str):
         entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
     
+    for batch in entry.get('batches', []):
+        if isinstance(batch.get('timestamp'), str):
+            batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+    
     return entry
+
+@api_router.post("/sales", response_model=SaleEntry)
+async def create_sale(
+    sale_data: SaleCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    sale = SaleEntry(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        party_name=sale_data.party_name,
+        quantity_kg=sale_data.quantity_kg
+    )
+    
+    doc = sale.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    await db.sales.insert_one(doc)
+    
+    return sale
+
+@api_router.get("/sales")
+async def get_sales(current_user: dict = Depends(get_current_user)):
+    sales = await db.sales.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    
+    for sale in sales:
+        if isinstance(sale['timestamp'], str):
+            sale['timestamp'] = datetime.fromisoformat(sale['timestamp'])
+    
+    return sales
+
+@api_router.get("/summary", response_model=SummaryStats)
+async def get_summary(current_user: dict = Depends(get_current_user)):
+    # Calculate total pure lead from refining
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
+    total_pure_lead = sum(
+        batch['pure_lead_kg']
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+    )
+    
+    # Calculate total remelted lead from recycling
+    recycling_entries = await db.entries.find({"entry_type": "recycling"}, {"_id": 0}).to_list(10000)
+    total_remelted_lead = sum(
+        batch['remelted_lead_kg']
+        for entry in recycling_entries
+        for batch in entry.get('batches', [])
+    )
+    
+    # Calculate total sold
+    sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
+    total_sold = sum(sale['quantity_kg'] for sale in sales)
+    
+    # Calculate available stock
+    available_stock = total_pure_lead + total_remelted_lead - total_sold
+    
+    return SummaryStats(
+        total_pure_lead_manufactured=round(total_pure_lead, 2),
+        total_remelted_lead=round(total_remelted_lead, 2),
+        total_sold=round(total_sold, 2),
+        available_stock=round(available_stock, 2)
+    )
 
 @api_router.get("/entries/export/excel")
 async def export_entries_excel(current_user: dict = Depends(get_current_user)):
-    entries = await db.entries.find({}, {"_id": 0, "lead_ingot_image": 0, "initial_dross_image": 0, "dross_2nd_image": 0, "dross_3rd_image": 0, "pure_lead_image": 0}).sort("timestamp", -1).to_list(10000)
+    entries = await db.entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
     
-    # Create workbook
     wb = Workbook()
-    ws = wb.active
-    ws.title = "Lead Entries"
     
-    # Headers
-    headers = [
-        "Entry ID", "Timestamp", "Employee", 
-        "Lead Ingot (kg)", "Lead Ingot (pieces)",
+    # Refining Sheet
+    ws_refining = wb.active
+    ws_refining.title = "Refining"
+    
+    headers_refining = [
+        "Date", "Time", "Employee", "Batch #",
+        "Lead Ingot (kg)", "Pieces",
         "Initial Dross (kg)", "2nd Dross (kg)", "3rd Dross (kg)",
         "Pure Lead Output (kg)"
     ]
     
-    # Style headers
     header_fill = PatternFill(start_color="EA580C", end_color="EA580C", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF", size=12)
     
-    for col_num, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_num, value=header)
+    for col_num, header in enumerate(headers_refining, 1):
+        cell = ws_refining.cell(row=1, column=col_num, value=header)
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center")
     
-    # Data rows
-    for row_num, entry in enumerate(entries, 2):
-        timestamp = entry['timestamp']
+    row_num = 2
+    for entry in entries:
+        if entry.get('entry_type') == 'refining':
+            timestamp = entry['timestamp']
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp)
+            
+            for batch_idx, batch in enumerate(entry.get('batches', []), 1):
+                ws_refining.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
+                ws_refining.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
+                ws_refining.cell(row=row_num, column=3, value=entry['user_name'])
+                ws_refining.cell(row=row_num, column=4, value=f"Batch {batch_idx}")
+                ws_refining.cell(row=row_num, column=5, value=batch['lead_ingot_kg'])
+                ws_refining.cell(row=row_num, column=6, value=batch['lead_ingot_pieces'])
+                ws_refining.cell(row=row_num, column=7, value=batch['initial_dross_kg'])
+                ws_refining.cell(row=row_num, column=8, value=batch['dross_2nd_kg'])
+                ws_refining.cell(row=row_num, column=9, value=batch['dross_3rd_kg'])
+                ws_refining.cell(row=row_num, column=10, value=batch['pure_lead_kg'])
+                row_num += 1
+    
+    # Recycling Sheet
+    ws_recycling = wb.create_sheet("Recycling")
+    headers_recycling = [
+        "Date", "Time", "Employee", "Batch #",
+        "Battery Type", "Battery Input (kg)", "Remelted Lead Output (kg)"
+    ]
+    
+    for col_num, header in enumerate(headers_recycling, 1):
+        cell = ws_recycling.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    row_num = 2
+    for entry in entries:
+        if entry.get('entry_type') == 'recycling':
+            timestamp = entry['timestamp']
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp)
+            
+            for batch_idx, batch in enumerate(entry.get('batches', []), 1):
+                ws_recycling.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
+                ws_recycling.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
+                ws_recycling.cell(row=row_num, column=3, value=entry['user_name'])
+                ws_recycling.cell(row=row_num, column=4, value=f"Batch {batch_idx}")
+                ws_recycling.cell(row=row_num, column=5, value=batch['battery_type'])
+                ws_recycling.cell(row=row_num, column=6, value=batch['battery_kg'])
+                ws_recycling.cell(row=row_num, column=7, value=batch['remelted_lead_kg'])
+                row_num += 1
+    
+    # Sales Sheet
+    ws_sales = wb.create_sheet("Sales")
+    headers_sales = ["Date", "Time", "Employee", "Party Name", "Quantity Sold (kg)"]
+    
+    for col_num, header in enumerate(headers_sales, 1):
+        cell = ws_sales.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    sales = await db.sales.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
+    for row_num, sale in enumerate(sales, 2):
+        timestamp = sale['timestamp']
         if isinstance(timestamp, str):
             timestamp = datetime.fromisoformat(timestamp)
         
-        ws.cell(row=row_num, column=1, value=entry['id'])
-        ws.cell(row=row_num, column=2, value=timestamp.strftime("%Y-%m-%d %H:%M:%S"))
-        ws.cell(row=row_num, column=3, value=entry['user_name'])
-        ws.cell(row=row_num, column=4, value=entry['lead_ingot_kg'])
-        ws.cell(row=row_num, column=5, value=entry['lead_ingot_pieces'])
-        ws.cell(row=row_num, column=6, value=entry['initial_dross_kg'])
-        ws.cell(row=row_num, column=7, value=entry['dross_2nd_kg'])
-        ws.cell(row=row_num, column=8, value=entry['dross_3rd_kg'])
-        ws.cell(row=row_num, column=9, value=entry['pure_lead_kg'])
+        ws_sales.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
+        ws_sales.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
+        ws_sales.cell(row=row_num, column=3, value=sale['user_name'])
+        ws_sales.cell(row=row_num, column=4, value=sale['party_name'])
+        ws_sales.cell(row=row_num, column=5, value=sale['quantity_kg'])
     
-    # Auto-adjust column widths
-    for column in ws.columns:
-        max_length = 0
-        column = list(column)
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
-            except:
-                pass
-        adjusted_width = (max_length + 2)
-        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+    # Auto-adjust column widths for all sheets
+    for ws in [ws_refining, ws_recycling, ws_sales]:
+        for column in ws.columns:
+            max_length = 0
+            column = list(column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column[0].column_letter].width = adjusted_width
     
-    # Save to bytes
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
@@ -309,10 +496,9 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=lead_entries.xlsx"}
+        headers={"Content-Disposition": "attachment; filename=leadtrack_report.xlsx"}
     )
 
-# Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
@@ -323,7 +509,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
