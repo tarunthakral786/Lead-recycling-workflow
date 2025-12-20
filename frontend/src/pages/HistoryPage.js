@@ -328,8 +328,30 @@ export default function HistoryPage({ user }) {
                       <p className="font-bold text-slate-700 mb-2">{batch.battery_type} Battery: {batch.battery_kg} kg</p>
                       <img src={`data:image/jpeg;base64,${batch.battery_image}`} alt="Battery" className="w-full h-48 object-contain bg-slate-100 rounded-lg" />
                     </div>
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-bold text-slate-500 uppercase">Expected Output</p>
+                        <p className="text-2xl font-bold text-green-600">{batch.remelted_lead_kg} kg</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-500 uppercase">Quantity Received</p>
+                        <p className="text-2xl font-bold text-slate-900">{batch.quantity_received} kg</p>
+                      </div>
+                      {user.name === 'TT' && (
+                        <>
+                          <div>
+                            <p className="text-sm font-bold text-blue-500 uppercase">Receivable</p>
+                            <p className="text-2xl font-bold text-blue-600">{batch.receivable_kg} kg</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-purple-500 uppercase">Recovery %</p>
+                            <p className="text-2xl font-bold text-purple-600">{batch.recovery_percent}%</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <div>
-                      <p className="font-bold text-green-700 mb-2">Remelted Lead Output: {batch.remelted_lead_kg} kg</p>
+                      <p className="font-bold text-green-700 mb-2">Remelted Lead Photo</p>
                       <img src={`data:image/jpeg;base64,${batch.remelted_lead_image}`} alt="Remelted Lead" className="w-full h-48 object-contain bg-slate-100 rounded-lg" />
                     </div>
                   </div>
