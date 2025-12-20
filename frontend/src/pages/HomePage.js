@@ -54,7 +54,7 @@ export default function HomePage({ user, onLogout }) {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-2">
               <FlaskConical className="w-8 h-8 text-blue-600" />
@@ -74,6 +74,17 @@ export default function HomePage({ user, onLogout }) {
               {loading ? '...' : `${stats?.total_dross || 0} kg`}
             </p>
             <p className="text-xs text-slate-500 mt-1">From refining</p>
+          </Card>
+
+          <Card className="bg-yellow-50 border-2 border-yellow-200 rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <FlaskConical className="w-8 h-8 text-yellow-700" />
+              <span className="text-sm font-bold text-yellow-700 uppercase">High Lead</span>
+            </div>
+            <p className="text-3xl font-bold text-yellow-800" data-testid="high-lead-stat">
+              {loading ? '...' : `${stats?.total_high_lead || 0} kg`}
+            </p>
+            <p className="text-xs text-yellow-600 mt-1 font-semibold">From dross recycling</p>
           </Card>
 
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
