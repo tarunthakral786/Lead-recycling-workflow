@@ -84,14 +84,13 @@ export default function RecyclingPage({ user }) {
 
   const handleSubmit = async () => {
     setLoading(true);
-    try {
-      // Filter only complete batches
+    try {\n      // Filter batches that have at least battery input complete (Step 1)
       const completeBatches = batches.filter(batch => 
-        batch.battery_kg && batch.battery_image && batch.remelted_lead_image && batch.quantity_received
+        batch.battery_kg && batch.battery_image
       );
 
       if (completeBatches.length === 0) {
-        toast.error('Please complete at least one batch');
+        toast.error('Please complete at least one battery input (weight + photo)');
         setLoading(false);
         return;
       }
@@ -108,7 +107,14 @@ export default function RecyclingPage({ user }) {
       
       completeBatches.forEach(batch => {
         form.append('files', batch.battery_image);
-        form.append('files', batch.remelted_lead_image);
+        // If remelted_lead_image exists, append it, otherwise create a placeholder
+        if (batch.remelted_lead_image) {
+          form.append('files', batch.remelted_lead_image);
+        } else {
+          // Create a minimal placeholder image for incomplete output
+          const emptyBlob = new Blob([''], { type: 'image/png' });
+          form.append('files', emptyBlob, 'placeholder.png');
+        }
       });
 
       const token = localStorage.getItem('token');
