@@ -63,6 +63,10 @@ function App() {
             element={user ? <RecyclingPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
+            path="/dross-recycling" 
+            element={user ? <DrossRecyclingPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
             path="/history" 
             element={user ? <HistoryPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
