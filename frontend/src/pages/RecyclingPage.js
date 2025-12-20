@@ -345,21 +345,28 @@ export default function RecyclingPage({ user }) {
                 {user.name === 'TT' && batch.battery_kg && batch.quantity_received && (
                   <div className="space-y-4">
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                      <Label className="block text-sm font-bold text-blue-700 uppercase tracking-wider mb-2">
-                        Scrap Battery Receivable (TT Only)
-                      </Label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="block text-sm font-bold text-blue-700 uppercase tracking-wider">
+                          Scrap Battery Receivable
+                        </Label>
+                        <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">TT ONLY</span>
+                      </div>
                       <p className="text-3xl font-bold text-blue-700" data-testid={`receivable-display-${batchIndex}`}>
                         {calculateReceivable(batch.battery_kg, batch.battery_type, batch.quantity_received)} kg
                       </p>
                     </div>
 
                     <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-                      <Label className="block text-sm font-bold text-purple-700 uppercase tracking-wider mb-2">
-                        Recovery Percentage (TT Only)
-                      </Label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="block text-sm font-bold text-purple-700 uppercase tracking-wider">
+                          Recovery Percentage
+                        </Label>
+                        <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded">TT ONLY</span>
+                      </div>
                       <p className="text-3xl font-bold text-purple-700" data-testid={`recovery-percent-display-${batchIndex}`}>
                         {calculateRecoveryPercent(batch.battery_kg, batch.quantity_received)}%
                       </p>
+                      <p className="text-sm text-purple-600 mt-2">Recovery from {batch.battery_type} Battery</p>
                     </div>
                   </div>
                 )}
