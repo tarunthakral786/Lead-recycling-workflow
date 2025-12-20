@@ -462,6 +462,9 @@ async def export_entries_excel(current_user: dict = Depends(get_current_user)):
                 ws_recycling.cell(row=row_num, column=5, value=batch['battery_type'])
                 ws_recycling.cell(row=row_num, column=6, value=batch['battery_kg'])
                 ws_recycling.cell(row=row_num, column=7, value=batch['remelted_lead_kg'])
+                ws_recycling.cell(row=row_num, column=8, value=batch.get('quantity_received', 0))
+                ws_recycling.cell(row=row_num, column=9, value=batch.get('receivable_kg', 0))
+                ws_recycling.cell(row=row_num, column=10, value=batch.get('recovery_percent', 0))
                 row_num += 1
     
     # Sales Sheet
