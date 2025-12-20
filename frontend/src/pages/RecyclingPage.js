@@ -215,11 +215,11 @@ export default function RecyclingPage({ user }) {
                 >
                   <SelectTrigger 
                     className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
-                    data-testid={`battery-type-select-${batchIndex}`}
+                    data-testid={`battery-type-trigger-${batchIndex}`}
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent data-testid={`battery-type-content-${batchIndex}`}>
                     <SelectItem value="PP" className="text-xl">PP Battery (60.5%)</SelectItem>
                     <SelectItem value="MC/SMF" className="text-xl">MC/SMF Battery (58%)</SelectItem>
                   </SelectContent>
