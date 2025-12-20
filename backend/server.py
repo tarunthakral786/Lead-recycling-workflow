@@ -474,6 +474,14 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Calculate total high lead from dross recycling
+    dross_recycling_entries = await db.dross_recycling_entries.find({}, {"_id": 0}).to_list(10000)
+    total_high_lead = sum(
+        batch['high_lead_recovered']
+        for entry in dross_recycling_entries
+        for batch in entry.get('batches', [])
+    )
+    
     # Calculate total remelted lead from recycling (actual quantity received)
     recycling_entries = await db.entries.find({"entry_type": "recycling"}, {"_id": 0}).to_list(10000)
     total_remelted_lead = sum(
