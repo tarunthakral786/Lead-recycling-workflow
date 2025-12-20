@@ -76,6 +76,19 @@ export default function HomePage({ user, onLogout }) {
             <p className="text-xs text-slate-500 mt-1">Actual received from recycling</p>
           </Card>
 
+          {user.name === 'TT' && (
+            <Card className="bg-blue-50 border-2 border-blue-200 rounded-xl shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <TrendingUp className="w-8 h-8 text-blue-600" />
+                <span className="text-sm font-bold text-blue-600 uppercase">Receivable</span>
+              </div>
+              <p className="text-3xl font-bold text-blue-700" data-testid="receivable-stat">
+                {loading ? '...' : `${stats?.total_receivable || 0} kg`}
+              </p>
+              <p className="text-xs text-blue-600 mt-1 font-semibold">TT ONLY - Scrap Battery</p>
+            </Card>
+          )}
+
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-2">
               <DollarSign className="w-8 h-8 text-orange-600" />
