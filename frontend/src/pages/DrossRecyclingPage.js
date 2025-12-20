@@ -141,14 +141,24 @@ export default function DrossRecyclingPage({ user }) {
               <p className="text-base text-slate-600">{drossData.length} entries | Total: {totalDross.toFixed(2)} kg</p>
             </div>
           </div>
-          <Button
-            onClick={handleExport}
-            data-testid="export-dross-button"
-            className="h-12 px-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold"
-          >
-            <Download className="w-5 h-5 mr-2" />
-            Export Excel
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => navigate('/dross-recycling/add')}
+              data-testid="add-high-lead-button"
+              className="h-12 px-6 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-bold"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add HIGH LEAD Recovery
+            </Button>
+            <Button
+              onClick={handleExport}
+              data-testid="export-dross-button"
+              className="h-12 px-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Export Excel
+            </Button>
+          </div>
         </div>
       </div>
 
