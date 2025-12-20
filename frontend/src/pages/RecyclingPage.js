@@ -138,8 +138,12 @@ export default function RecyclingPage({ user }) {
     return false;
   };
 
-  const allBatchesCanProceed = () => {
-    return batches.every((_, index) => canProceed(index));
+  const anyBatchCanProceed = () => {
+    return batches.some((_, index) => canProceed(index));
+  };
+
+  const getStep1CompleteCount = () => {
+    return batches.filter(batch => batch.battery_kg && batch.battery_image).length;
   };
 
   const getCompleteCount = () => {
