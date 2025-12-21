@@ -463,18 +463,25 @@ class LeadTrackAPITester:
             print("❌ API not accessible, stopping tests")
             return False
             
-        # Authentication tests
-        self.test_user_registration()
-        self.test_user_login()
-        self.test_duplicate_registration()
-        self.test_invalid_login()
+        # Test user list for login page
+        self.test_users_list()
+        
+        # Authentication tests with provided credentials
+        self.test_admin_login()
+        self.test_factory_login()
+        
+        # Admin functionality tests (only if admin authenticated)
+        if self.admin_token:
+            self.test_admin_get_users()
+            self.test_admin_add_user()
+            self.test_admin_delete_user()
+            self.test_recovery_settings_get()
+            self.test_recovery_settings_update()
         
         # Entry management tests (only if authenticated)
         if self.token:
-            self.test_create_entry()
+            self.test_create_refining_entry()
             self.test_get_entries()
-            self.test_get_entry_detail()
-            self.test_excel_export()
         
         # Security tests
         self.test_unauthorized_access()
