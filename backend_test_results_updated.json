@@ -1,0 +1,82 @@
+{
+  "summary": {
+    "total_tests": 12,
+    "passed_tests": 12,
+    "success_rate": "100.0%",
+    "timestamp": "2025-12-21T13:16:30.785808"
+  },
+  "detailed_results": [
+    {
+      "test": "API Root Endpoint",
+      "success": true,
+      "details": "Status: 200, Message: LeadTrack Pro API",
+      "timestamp": "2025-12-21T13:16:29.604601"
+    },
+    {
+      "test": "Users List for Login",
+      "success": true,
+      "details": "Status: 200, Users found: ['Factory', 'TT', 'Umesh Thakral'], Only expected users present",
+      "timestamp": "2025-12-21T13:16:29.644966"
+    },
+    {
+      "test": "TT Admin Login",
+      "success": true,
+      "details": "Status: 200, Admin token received: Yes, User: TT",
+      "timestamp": "2025-12-21T13:16:29.909511"
+    },
+    {
+      "test": "Factory User Login",
+      "success": true,
+      "details": "Status: 200, Factory token received: Yes, User: Factory",
+      "timestamp": "2025-12-21T13:16:30.171011"
+    },
+    {
+      "test": "Admin Get Users",
+      "success": true,
+      "details": "Status: 200, Total users: 3, Users: ['Factory', 'TT', 'Umesh Thakral']",
+      "timestamp": "2025-12-21T13:16:30.208841"
+    },
+    {
+      "test": "Admin Add User",
+      "success": true,
+      "details": "Status: 200, User created: Test User 131630, ID: d3cf708e-8476-40f1-9b55-963edb7b1b58",
+      "timestamp": "2025-12-21T13:16:30.473753"
+    },
+    {
+      "test": "Admin Delete User",
+      "success": true,
+      "details": "Status: 200, User deleted successfully",
+      "timestamp": "2025-12-21T13:16:30.514898"
+    },
+    {
+      "test": "Get Recovery Settings",
+      "success": true,
+      "details": "Status: 200, PP: 60.5%, MC/SMF: 58.0%",
+      "timestamp": "2025-12-21T13:16:30.553918"
+    },
+    {
+      "test": "Update Recovery Settings",
+      "success": true,
+      "details": "Status: 200, Settings updated to PP: 65.0%, MC/SMF: 62.0%, Restored to original values",
+      "timestamp": "2025-12-21T13:16:30.669534"
+    },
+    {
+      "test": "Create Refining Entry",
+      "success": true,
+      "details": "Status: 200, Entry ID: b8794ff6-be1b-4cd5-930e-0f0631837267, Message: Refining entry created successfully",
+      "timestamp": "2025-12-21T13:16:30.715462"
+    },
+    {
+      "test": "Get Entries List",
+      "success": true,
+      "details": "Status: 200, Entries count: 2, First entry user: Factory",
+      "timestamp": "2025-12-21T13:16:30.752010"
+    },
+    {
+      "test": "Unauthorized Access Check",
+      "success": true,
+      "details": "Status: 403 (Expected: 403), Correctly rejected unauthorized access",
+      "timestamp": "2025-12-21T13:16:30.784927"
+    }
+  ]
+}
