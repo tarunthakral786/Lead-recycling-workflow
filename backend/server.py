@@ -108,7 +108,9 @@ class RefiningBatch(BaseModel):
     dross_2nd_image: str
     dross_3rd_kg: float
     dross_3rd_image: str
+    dross_remarks: Optional[str] = ""
     pure_lead_kg: float
+    pure_lead_pieces: int = 0
     pure_lead_image: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
