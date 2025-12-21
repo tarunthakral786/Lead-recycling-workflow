@@ -20,9 +20,9 @@ export default function RecyclingPage({ user }) {
   const [batches, setBatches] = useState([{
     battery_type: 'PP',
     battery_kg: '',
-    battery_image: null,
+    battery_images: [], // Multiple images support
     quantity_received: '',
-    remelted_lead_image: null
+    remelted_lead_images: [] // Multiple images support
   }]);
   const [imagePreviews, setImagePreviews] = useState([{}]);
 
@@ -30,9 +30,9 @@ export default function RecyclingPage({ user }) {
     setBatches([...batches, {
       battery_type: 'PP',
       battery_kg: '',
-      battery_image: null,
+      battery_images: [],
       quantity_received: '',
-      remelted_lead_image: null
+      remelted_lead_images: []
     }]);
     setImagePreviews([...imagePreviews, {}]);
   };
@@ -44,23 +44,49 @@ export default function RecyclingPage({ user }) {
     }
   };
 
-  const handleFileChange = async (batchIndex, field, file) => {
-    if (!file) return;
+  // Handle multiple files for a field
+  const handleMultipleFileChange = async (batchIndex, field, files) => {
+    if (!files || files.length === 0) return;
     
-    // Compress image before storing
-    const compressedFile = await compressImage(file);
+    const compressedFiles = [];
+    const previewUrls = [];
+    
+    for (const file of Array.from(files)) {
+      const compressedFile = await compressImage(file);
+      compressedFiles.push(compressedFile);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previewUrls.push(reader.result);
+        if (previewUrls.length === files.length) {
+          const newPreviews = [...imagePreviews];
+          newPreviews[batchIndex] = { 
+            ...newPreviews[batchIndex], 
+            [field]: [...(newPreviews[batchIndex]?.[field] || []), ...previewUrls]
+          };
+          setImagePreviews(newPreviews);
+        }
+      };
+      reader.readAsDataURL(compressedFile);
+    }
     
     const newBatches = [...batches];
-    newBatches[batchIndex][field] = compressedFile;
+    newBatches[batchIndex][field] = [...(newBatches[batchIndex][field] || []), ...compressedFiles];
     setBatches(newBatches);
+  };
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const newPreviews = [...imagePreviews];
-      newPreviews[batchIndex] = { ...newPreviews[batchIndex], [field]: reader.result };
+  // Remove a specific image from array
+  const removeImage = (batchIndex, field, imageIndex) => {
+    const newBatches = [...batches];
+    newBatches[batchIndex][field] = newBatches[batchIndex][field].filter((_, i) => i !== imageIndex);
+    setBatches(newBatches);
+    
+    const newPreviews = [...imagePreviews];
+    if (newPreviews[batchIndex]?.[field]) {
+      newPreviews[batchIndex][field] = newPreviews[batchIndex][field].filter((_, i) => i !== imageIndex);
       setImagePreviews(newPreviews);
-    };
-    reader.readAsDataURL(compressedFile);
+    }
   };
 
   const handleInputChange = (batchIndex, field, value) => {
@@ -91,7 +117,7 @@ export default function RecyclingPage({ user }) {
     try {
       // Filter batches that have at least battery input complete (Step 1)
       const completeBatches = batches.filter(batch => 
-        batch.battery_kg && batch.battery_image
+        batch.battery_kg && batch.battery_images.length > 0
       );
 
       if (completeBatches.length === 0) {
@@ -106,15 +132,16 @@ export default function RecyclingPage({ user }) {
         battery_type: batch.battery_type,
         battery_kg: parseFloat(batch.battery_kg),
         quantity_received: parseFloat(batch.quantity_received) || 0,
-        has_output_image: !!batch.remelted_lead_image
+        has_output_image: batch.remelted_lead_images.length > 0
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
       
       completeBatches.forEach(batch => {
-        form.append('files', batch.battery_image);
-        if (batch.remelted_lead_image) {
-          form.append('files', batch.remelted_lead_image);
+        // Send first image for backward compatibility
+        if (batch.battery_images[0]) form.append('files', batch.battery_images[0]);
+        if (batch.remelted_lead_images.length > 0) {
+          form.append('files', batch.remelted_lead_images[0]);
         }
       });
 
@@ -138,9 +165,9 @@ export default function RecyclingPage({ user }) {
   const canProceed = (batchIndex) => {
     const batch = batches[batchIndex];
     if (step === 1) {
-      return batch.battery_kg && batch.battery_image;
+      return batch.battery_kg && batch.battery_images.length > 0;
     } else if (step === 2) {
-      return batch.quantity_received && batch.remelted_lead_image;
+      return batch.quantity_received && batch.remelted_lead_images.length > 0;
     }
     return false;
   };
@@ -150,46 +177,75 @@ export default function RecyclingPage({ user }) {
   };
 
   const getStep1CompleteCount = () => {
-    return batches.filter(batch => batch.battery_kg && batch.battery_image).length;
+    return batches.filter(batch => batch.battery_kg && batch.battery_images.length > 0).length;
   };
 
   const getCompleteCount = () => {
     return batches.filter(batch => 
-      batch.battery_kg && batch.battery_image
+      batch.battery_kg && batch.battery_images.length > 0
     ).length;
   };
 
-  const renderImageUpload = (batchIndex, field, label) => (
-    <div>
-      <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-        {label}
-      </Label>
-      <label
-        htmlFor={`${field}-${batchIndex}`}
-        className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-green-50 hover:border-green-300 transition-colors cursor-pointer h-48 flex flex-col items-center justify-center gap-3"
-        data-testid={`${field}-upload-zone-${batchIndex}`}
-      >
-        {imagePreviews[batchIndex]?.[field] ? (
-          <img src={imagePreviews[batchIndex][field]} alt="Preview" className="h-40 object-contain" />
-        ) : (
-          <>
-            <Camera className="w-12 h-12 text-slate-400" />
-            <span className="text-lg font-semibold text-slate-500">Tap to capture</span>
-          </>
+  // Render multiple image upload
+  const renderMultiImageUpload = (batchIndex, field, label) => {
+    const images = imagePreviews[batchIndex]?.[field] || [];
+    
+    return (
+      <div>
+        <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+          {label}
+        </Label>
+        
+        {/* Existing images */}
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {images.map((img, imgIdx) => (
+              <div key={imgIdx} className="relative">
+                <img src={img} alt={`Preview ${imgIdx + 1}`} className="h-24 w-full object-cover rounded-lg border-2 border-slate-200" />
+                <button
+                  onClick={() => removeImage(batchIndex, field, imgIdx)}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         )}
-      </label>
-      <input
-        id={`${field}-${batchIndex}`}
-        data-testid={`${field}-input-${batchIndex}`}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={(e) => handleFileChange(batchIndex, field, e.target.files[0])}
-        className="hidden"
-        required
-      />
-    </div>
-  );
+        
+        {/* Add more images */}
+        <label
+          htmlFor={`${field}-${batchIndex}`}
+          className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-green-50 hover:border-green-300 transition-colors cursor-pointer h-32 flex flex-col items-center justify-center gap-2"
+          data-testid={`${field}-upload-zone-${batchIndex}`}
+        >
+          <div className="flex items-center gap-2">
+            <Camera className="w-8 h-8 text-slate-400" />
+            <Plus className="w-6 h-6 text-slate-400" />
+          </div>
+          <span className="text-base font-semibold text-slate-500">
+            {images.length > 0 ? 'Add more photos' : 'Tap to capture photos'}
+          </span>
+          <span className="text-xs text-slate-400">Multiple images allowed</span>
+        </label>
+        
+        <input
+          id={`${field}-${batchIndex}`}
+          data-testid={`${field}-input-${batchIndex}`}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={(e) => handleMultipleFileChange(batchIndex, field, e.target.files)}
+          className="hidden"
+        />
+        
+        {images.length > 0 && (
+          <p className="text-sm text-slate-500 mt-1">{images.length} photo(s) added</p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -296,7 +352,7 @@ export default function RecyclingPage({ user }) {
                   />
                 </div>
 
-                {renderImageUpload(batchIndex, 'battery_image', 'Photo of Battery Weight')}
+                {renderMultiImageUpload(batchIndex, 'battery_images', 'Photos of Battery Weight')}
 
                 {/* Auto-calculated output */}
                 {batch.battery_kg && (
@@ -378,7 +434,7 @@ export default function RecyclingPage({ user }) {
                   </div>
                 )}
 
-                {renderImageUpload(batchIndex, 'remelted_lead_image', 'Photo of Remelted Lead Output')}
+                {renderMultiImageUpload(batchIndex, 'remelted_lead_images', 'Photos of Remelted Lead Output')}
               </div>
             )}
           </Card>
