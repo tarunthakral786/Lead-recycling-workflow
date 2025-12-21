@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Camera, ArrowLeft, Plus, X, Check, ChevronRight } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Camera, ArrowLeft, Plus, X, Check, ChevronRight, Image } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,15 +23,17 @@ export default function RefiningPage({ user }) {
   const [batches, setBatches] = useState([{
     lead_ingot_kg: '',
     lead_ingot_pieces: '',
-    lead_ingot_image: null,
+    lead_ingot_images: [], // Multiple images support
     initial_dross_kg: '',
-    initial_dross_image: null,
+    initial_dross_images: [],
     dross_2nd_kg: '',
-    dross_2nd_image: null,
+    dross_2nd_images: [],
     dross_3rd_kg: '',
-    dross_3rd_image: null,
+    dross_3rd_images: [],
+    dross_remarks: '', // Optional remarks for dross
     pure_lead_kg: '',
-    pure_lead_image: null,
+    pure_lead_pieces: '', // Added pieces for pure lead
+    pure_lead_images: [],
     step1_saved: false,
     step2_saved: false,
     step3_saved: false
@@ -41,15 +44,17 @@ export default function RefiningPage({ user }) {
     setBatches([...batches, {
       lead_ingot_kg: '',
       lead_ingot_pieces: '',
-      lead_ingot_image: null,
+      lead_ingot_images: [],
       initial_dross_kg: '',
-      initial_dross_image: null,
+      initial_dross_images: [],
       dross_2nd_kg: '',
-      dross_2nd_image: null,
+      dross_2nd_images: [],
       dross_3rd_kg: '',
-      dross_3rd_image: null,
+      dross_3rd_images: [],
+      dross_remarks: '',
       pure_lead_kg: '',
-      pure_lead_image: null,
+      pure_lead_pieces: '',
+      pure_lead_images: [],
       step1_saved: false,
       step2_saved: false,
       step3_saved: false
@@ -70,22 +75,49 @@ export default function RefiningPage({ user }) {
     }
   };
 
-  const handleFileChange = async (batchIndex, field, file) => {
-    if (!file) return;
+  // Handle multiple files for a field
+  const handleMultipleFileChange = async (batchIndex, field, files) => {
+    if (!files || files.length === 0) return;
     
-    const compressedFile = await compressImage(file);
+    const compressedFiles = [];
+    const previewUrls = [];
+    
+    for (const file of Array.from(files)) {
+      const compressedFile = await compressImage(file);
+      compressedFiles.push(compressedFile);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previewUrls.push(reader.result);
+        if (previewUrls.length === files.length) {
+          const newPreviews = [...imagePreviews];
+          newPreviews[batchIndex] = { 
+            ...newPreviews[batchIndex], 
+            [field]: [...(newPreviews[batchIndex]?.[field] || []), ...previewUrls]
+          };
+          setImagePreviews(newPreviews);
+        }
+      };
+      reader.readAsDataURL(compressedFile);
+    }
     
     const newBatches = [...batches];
-    newBatches[batchIndex][field] = compressedFile;
+    newBatches[batchIndex][field] = [...(newBatches[batchIndex][field] || []), ...compressedFiles];
     setBatches(newBatches);
+  };
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const newPreviews = [...imagePreviews];
-      newPreviews[batchIndex] = { ...newPreviews[batchIndex], [field]: reader.result };
+  // Remove a specific image from array
+  const removeImage = (batchIndex, field, imageIndex) => {
+    const newBatches = [...batches];
+    newBatches[batchIndex][field] = newBatches[batchIndex][field].filter((_, i) => i !== imageIndex);
+    setBatches(newBatches);
+    
+    const newPreviews = [...imagePreviews];
+    if (newPreviews[batchIndex]?.[field]) {
+      newPreviews[batchIndex][field] = newPreviews[batchIndex][field].filter((_, i) => i !== imageIndex);
       setImagePreviews(newPreviews);
-    };
-    reader.readAsDataURL(compressedFile);
+    }
   };
 
   const handleInputChange = (batchIndex, field, value) => {
@@ -98,13 +130,13 @@ export default function RefiningPage({ user }) {
   const canSaveCurrentStep = (batchIndex) => {
     const batch = batches[batchIndex];
     if (step === 1) {
-      return batch.lead_ingot_kg && batch.lead_ingot_pieces && batch.lead_ingot_image;
+      return batch.lead_ingot_kg && batch.lead_ingot_pieces && batch.lead_ingot_images.length > 0;
     } else if (step === 2) {
-      return batch.initial_dross_kg && batch.initial_dross_image && 
-             batch.dross_2nd_kg && batch.dross_2nd_image && 
-             batch.dross_3rd_kg && batch.dross_3rd_image;
+      return batch.initial_dross_kg && batch.initial_dross_images.length > 0 && 
+             batch.dross_2nd_kg && batch.dross_2nd_images.length > 0 && 
+             batch.dross_3rd_kg && batch.dross_3rd_images.length > 0;
     } else if (step === 3) {
-      return batch.pure_lead_kg && batch.pure_lead_image;
+      return batch.pure_lead_kg && batch.pure_lead_pieces && batch.pure_lead_images.length > 0;
     }
     return false;
   };
@@ -156,17 +188,27 @@ export default function RefiningPage({ user }) {
         initial_dross_kg: parseFloat(batch.initial_dross_kg),
         dross_2nd_kg: parseFloat(batch.dross_2nd_kg),
         dross_3rd_kg: parseFloat(batch.dross_3rd_kg),
-        pure_lead_kg: parseFloat(batch.pure_lead_kg)
+        dross_remarks: batch.dross_remarks || '',
+        pure_lead_kg: parseFloat(batch.pure_lead_kg),
+        pure_lead_pieces: parseInt(batch.pure_lead_pieces),
+        // Include image counts for backend processing
+        lead_ingot_image_count: batch.lead_ingot_images.length,
+        initial_dross_image_count: batch.initial_dross_images.length,
+        dross_2nd_image_count: batch.dross_2nd_images.length,
+        dross_3rd_image_count: batch.dross_3rd_images.length,
+        pure_lead_image_count: batch.pure_lead_images.length
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
       
+      // Append all images in order - first image of each field for backward compatibility
       batches.forEach(batch => {
-        form.append('files', batch.lead_ingot_image);
-        form.append('files', batch.initial_dross_image);
-        form.append('files', batch.dross_2nd_image);
-        form.append('files', batch.dross_3rd_image);
-        form.append('files', batch.pure_lead_image);
+        // Send first image of each type (for backward compatibility)
+        if (batch.lead_ingot_images[0]) form.append('files', batch.lead_ingot_images[0]);
+        if (batch.initial_dross_images[0]) form.append('files', batch.initial_dross_images[0]);
+        if (batch.dross_2nd_images[0]) form.append('files', batch.dross_2nd_images[0]);
+        if (batch.dross_3rd_images[0]) form.append('files', batch.dross_3rd_images[0]);
+        if (batch.pure_lead_images[0]) form.append('files', batch.pure_lead_images[0]);
       });
 
       const token = localStorage.getItem('token');
@@ -186,37 +228,72 @@ export default function RefiningPage({ user }) {
     }
   };
 
-  const renderImageUpload = (batchIndex, field, label) => (
-    <div>
-      <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-        {label}
-      </Label>
-      <label
-        htmlFor={`${field}-${batchIndex}`}
-        className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-orange-50 hover:border-orange-300 transition-colors cursor-pointer h-48 flex flex-col items-center justify-center gap-3"
-        data-testid={`${field}-upload-zone-${batchIndex}`}
-      >
-        {imagePreviews[batchIndex]?.[field] ? (
-          <img src={imagePreviews[batchIndex][field]} alt="Preview" className="h-40 object-contain" />
-        ) : (
-          <>
-            <Camera className="w-12 h-12 text-slate-400" />
-            <span className="text-lg font-semibold text-slate-500">Tap to capture</span>
-          </>
+  // Render multiple image upload
+  const renderMultiImageUpload = (batchIndex, field, label) => {
+    const images = imagePreviews[batchIndex]?.[field] || [];
+    const isDisabled = isBatchStepSaved(batchIndex);
+    
+    return (
+      <div>
+        <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+          {label}
+        </Label>
+        
+        {/* Existing images */}
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {images.map((img, imgIdx) => (
+              <div key={imgIdx} className="relative">
+                <img src={img} alt={`Preview ${imgIdx + 1}`} className="h-24 w-full object-cover rounded-lg border-2 border-slate-200" />
+                {!isDisabled && (
+                  <button
+                    onClick={() => removeImage(batchIndex, field, imgIdx)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         )}
-      </label>
-      <input
-        id={`${field}-${batchIndex}`}
-        data-testid={`${field}-input-${batchIndex}`}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={(e) => handleFileChange(batchIndex, field, e.target.files[0])}
-        className="hidden"
-        required
-      />
-    </div>
-  );
+        
+        {/* Add more images */}
+        {!isDisabled && (
+          <label
+            htmlFor={`${field}-${batchIndex}`}
+            className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-orange-50 hover:border-orange-300 transition-colors cursor-pointer h-32 flex flex-col items-center justify-center gap-2"
+            data-testid={`${field}-upload-zone-${batchIndex}`}
+          >
+            <div className="flex items-center gap-2">
+              <Camera className="w-8 h-8 text-slate-400" />
+              <Plus className="w-6 h-6 text-slate-400" />
+            </div>
+            <span className="text-base font-semibold text-slate-500">
+              {images.length > 0 ? 'Add more photos' : 'Tap to capture photos'}
+            </span>
+            <span className="text-xs text-slate-400">Multiple images allowed</span>
+          </label>
+        )}
+        
+        <input
+          id={`${field}-${batchIndex}`}
+          data-testid={`${field}-input-${batchIndex}`}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={(e) => handleMultipleFileChange(batchIndex, field, e.target.files)}
+          className="hidden"
+          disabled={isDisabled}
+        />
+        
+        {images.length > 0 && (
+          <p className="text-sm text-slate-500 mt-1">{images.length} photo(s) added</p>
+        )}
+      </div>
+    );
+  };
 
   const renderBatchTabs = () => (
     <div className="flex gap-2 mb-6 flex-wrap">
@@ -356,7 +433,7 @@ export default function RefiningPage({ user }) {
                 />
               </div>
 
-              {renderImageUpload(currentBatchIndex, 'lead_ingot_image', 'Photo of Weight')}
+              {renderMultiImageUpload(currentBatchIndex, 'lead_ingot_images', 'Photos of Weight')}
             </div>
           )}
 
@@ -379,7 +456,7 @@ export default function RefiningPage({ user }) {
                   placeholder="0.00"
                 />
               </div>
-              {renderImageUpload(currentBatchIndex, 'initial_dross_image', 'Photo of Initial Dross')}
+              {renderMultiImageUpload(currentBatchIndex, 'initial_dross_images', 'Photos of Initial Dross')}
 
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -396,7 +473,7 @@ export default function RefiningPage({ user }) {
                   placeholder="0.00"
                 />
               </div>
-              {renderImageUpload(currentBatchIndex, 'dross_2nd_image', 'Photo of 2nd Dross')}
+              {renderMultiImageUpload(currentBatchIndex, 'dross_2nd_images', 'Photos of 2nd Dross')}
 
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -413,7 +490,22 @@ export default function RefiningPage({ user }) {
                   placeholder="0.00"
                 />
               </div>
-              {renderImageUpload(currentBatchIndex, 'dross_3rd_image', 'Photo of 3rd Dross')}
+              {renderMultiImageUpload(currentBatchIndex, 'dross_3rd_images', 'Photos of 3rd Dross')}
+
+              {/* Optional Remarks */}
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Remarks (Optional)
+                </Label>
+                <Textarea
+                  data-testid={`dross-remarks-input-${currentBatchIndex}`}
+                  value={batch.dross_remarks}
+                  onChange={(e) => handleInputChange(currentBatchIndex, 'dross_remarks', e.target.value)}
+                  disabled={isBatchStepSaved(currentBatchIndex)}
+                  className="min-h-[100px] text-lg px-4 py-3 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 disabled:bg-slate-100"
+                  placeholder="Enter any remarks or notes about the dross (optional)"
+                />
+              </div>
             </div>
           )}
 
@@ -437,7 +529,22 @@ export default function RefiningPage({ user }) {
                 />
               </div>
 
-              {renderImageUpload(currentBatchIndex, 'pure_lead_image', 'Photo of Pure Lead Weight')}
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Pure Lead Pieces
+                </Label>
+                <Input
+                  data-testid={`pure-lead-pieces-input-${currentBatchIndex}`}
+                  type="number"
+                  value={batch.pure_lead_pieces}
+                  onChange={(e) => handleInputChange(currentBatchIndex, 'pure_lead_pieces', e.target.value)}
+                  disabled={isBatchStepSaved(currentBatchIndex)}
+                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 disabled:bg-slate-100"
+                  placeholder="0"
+                />
+              </div>
+
+              {renderMultiImageUpload(currentBatchIndex, 'pure_lead_images', 'Photos of Pure Lead Weight')}
             </div>
           )}
 
