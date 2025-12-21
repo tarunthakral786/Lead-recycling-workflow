@@ -101,3 +101,159 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Lead tracking application for factory with:
+  - Refining module (lead ingots → pure lead through 3-stage dross)
+  - Recycling module (battery scrap → remelted lead)
+  - Dross Recycling module (dross → HIGH LEAD)
+  - Two user roles: Factory (standard) and TT (master admin)
+  - TT has Control Panel with admin rights
+  - Step-by-step batch entry in Refining with individual saves
+
+backend:
+  - task: "User authentication (login)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "JWT-based login working for both Factory and TT users"
+
+  - task: "Admin - Add user"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/admin/users endpoint tested via curl - working"
+
+  - task: "Admin - Delete user"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "DELETE /api/admin/users/{id} endpoint tested via curl - working"
+
+  - task: "Admin - Recovery settings (PP & MC/SMF %)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/PUT /api/admin/recovery-settings endpoints implemented"
+
+  - task: "Get users list for login page"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/users/list returns only valid users after cleanup"
+
+frontend:
+  - task: "Login page with user selection"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/LoginPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Shows Factory, TT, Umesh Thakral - test users removed"
+
+  - task: "TT Control Panel - Users tab"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/ControlPanelPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Add user and delete user UI visible, backend APIs tested"
+
+  - task: "TT Control Panel - Recovery Settings tab"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/ControlPanelPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PP and MC/SMF recovery percentage inputs available"
+
+  - task: "Refining - Step-by-step batch workflow"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/RefiningPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Completely rewritten with save-per-batch workflow. Step 1-3 with individual batch saves, then Next Step button."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "TT Control Panel - Users tab"
+    - "TT Control Panel - Recovery Settings tab"
+    - "Refining - Step-by-step batch workflow"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Fixed the following issues:
+      1. Removed test users from login page - only Factory, TT, Umesh Thakral visible
+      2. Verified add/delete user APIs work via curl
+      3. Rewrote RefiningPage.js with new step-by-step batch workflow:
+         - User enters batch details → clicks "Save Batch X" 
+         - Can add multiple batches, each saved individually
+         - "Next Step" only enabled after ALL batches saved for current step
+         - Repeats for Steps 2 & 3, then final submit
+      
+      Please test:
+      1. Control Panel - Add a new user, verify it appears on login page
+      2. Control Panel - Delete a user (not TT or Factory)
+      3. Control Panel - Update recovery settings
+      4. Refining - Test the new save-per-batch workflow
+      
+      Credentials:
+      - TT: tt@leadtrack.com / 9786
+      - Factory: factory@leadtrack.com / 0786
