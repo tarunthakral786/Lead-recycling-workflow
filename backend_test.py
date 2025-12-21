@@ -49,44 +49,37 @@ class LeadTrackAPITester:
             self.log_test("API Root Endpoint", False, f"Error: {str(e)}")
             return False
 
-    def test_user_registration(self):
-        """Test user registration"""
-        test_user = {
-            "name": f"Test User {datetime.now().strftime('%H%M%S')}",
-            "email": f"test_{datetime.now().strftime('%H%M%S')}@example.com",
-            "password": "TestPass123!"
+    def test_admin_login(self):
+        """Test TT admin login"""
+        login_data = {
+            "email": "tt@leadtrack.com",
+            "password": "9786"
         }
         
         try:
-            response = requests.post(f"{self.api_url}/auth/register", json=test_user, timeout=10)
+            response = requests.post(f"{self.api_url}/auth/login", json=login_data, timeout=10)
             success = response.status_code == 200
             details = f"Status: {response.status_code}"
             
             if success:
                 data = response.json()
-                self.user_id = data.get('id')
-                details += f", User ID: {self.user_id}"
-                # Store for login test
-                self.test_email = test_user['email']
-                self.test_password = test_user['password']
+                self.admin_token = data.get('access_token')
+                details += f", Admin token received: {'Yes' if self.admin_token else 'No'}"
+                details += f", User: {data.get('user', {}).get('name', 'Unknown')}"
             else:
                 details += f", Error: {response.text}"
                 
-            self.log_test("User Registration", success, details)
+            self.log_test("TT Admin Login", success, details)
             return success
         except Exception as e:
-            self.log_test("User Registration", False, f"Error: {str(e)}")
+            self.log_test("TT Admin Login", False, f"Error: {str(e)}")
             return False
 
-    def test_user_login(self):
-        """Test user login"""
-        if not hasattr(self, 'test_email'):
-            self.log_test("User Login", False, "No test user available")
-            return False
-            
+    def test_factory_login(self):
+        """Test Factory user login"""
         login_data = {
-            "email": self.test_email,
-            "password": self.test_password
+            "email": "factory@leadtrack.com",
+            "password": "0786"
         }
         
         try:
@@ -97,66 +90,200 @@ class LeadTrackAPITester:
             if success:
                 data = response.json()
                 self.token = data.get('access_token')
-                details += f", Token received: {'Yes' if self.token else 'No'}"
+                details += f", Factory token received: {'Yes' if self.token else 'No'}"
                 details += f", User: {data.get('user', {}).get('name', 'Unknown')}"
             else:
                 details += f", Error: {response.text}"
                 
-            self.log_test("User Login", success, details)
+            self.log_test("Factory User Login", success, details)
             return success
         except Exception as e:
-            self.log_test("User Login", False, f"Error: {str(e)}")
+            self.log_test("Factory User Login", False, f"Error: {str(e)}")
             return False
 
-    def test_duplicate_registration(self):
-        """Test duplicate email registration"""
-        if not hasattr(self, 'test_email'):
-            self.log_test("Duplicate Registration Check", False, "No test user available")
+    def test_users_list(self):
+        """Test getting users list for login page"""
+        try:
+            response = requests.get(f"{self.api_url}/users/list", timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                user_names = [user.get('name') for user in data]
+                details += f", Users found: {user_names}"
+                
+                # Check if only expected users are present
+                expected_users = ['Factory', 'TT', 'Umesh Thakral']
+                unexpected_users = [name for name in user_names if name not in expected_users]
+                missing_users = [name for name in expected_users if name not in user_names]
+                
+                if unexpected_users:
+                    details += f", Unexpected users: {unexpected_users}"
+                    success = False
+                if missing_users:
+                    details += f", Missing users: {missing_users}"
+                    success = False
+                    
+                if success:
+                    details += ", Only expected users present"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Users List for Login", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Users List for Login", False, f"Error: {str(e)}")
+            return False
+
+    def test_admin_add_user(self):
+        """Test admin add user functionality"""
+        if not self.admin_token:
+            self.log_test("Admin Add User", False, "No admin token")
             return False
             
-        duplicate_user = {
-            "name": "Duplicate User",
-            "email": self.test_email,  # Same email as before
-            "password": "AnotherPass123!"
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        test_user = {
+            "name": f"Test User {datetime.now().strftime('%H%M%S')}",
+            "email": f"testuser_{datetime.now().strftime('%H%M%S')}@leadtrack.com",
+            "password": "TestPass123!"
         }
         
         try:
-            response = requests.post(f"{self.api_url}/auth/register", json=duplicate_user, timeout=10)
-            success = response.status_code == 400  # Should fail with 400
-            details = f"Status: {response.status_code} (Expected: 400)"
+            response = requests.post(f"{self.api_url}/admin/users", json=test_user, headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
             
-            if response.status_code == 400:
-                details += ", Correctly rejected duplicate email"
+            if success:
+                data = response.json()
+                self.test_user_id = data.get('id')
+                self.test_user_name = test_user['name']
+                details += f", User created: {data.get('name')}, ID: {self.test_user_id}"
             else:
-                details += f", Unexpected response: {response.text}"
+                details += f", Error: {response.text}"
                 
-            self.log_test("Duplicate Registration Check", success, details)
+            self.log_test("Admin Add User", success, details)
             return success
         except Exception as e:
-            self.log_test("Duplicate Registration Check", False, f"Error: {str(e)}")
+            self.log_test("Admin Add User", False, f"Error: {str(e)}")
             return False
 
-    def test_invalid_login(self):
-        """Test login with invalid credentials"""
-        invalid_login = {
-            "email": "nonexistent@example.com",
-            "password": "wrongpassword"
+    def test_admin_get_users(self):
+        """Test admin get all users"""
+        if not self.admin_token:
+            self.log_test("Admin Get Users", False, "No admin token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        try:
+            response = requests.get(f"{self.api_url}/admin/users", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", Total users: {len(data)}"
+                user_names = [user.get('name') for user in data]
+                details += f", Users: {user_names}"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Admin Get Users", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Admin Get Users", False, f"Error: {str(e)}")
+            return False
+
+    def test_admin_delete_user(self):
+        """Test admin delete user functionality"""
+        if not self.admin_token or not hasattr(self, 'test_user_id'):
+            self.log_test("Admin Delete User", False, "No admin token or test user")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        try:
+            response = requests.delete(f"{self.api_url}/admin/users/{self.test_user_id}", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                details += f", User deleted successfully"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Admin Delete User", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Admin Delete User", False, f"Error: {str(e)}")
+            return False
+
+    def test_recovery_settings_get(self):
+        """Test getting recovery settings"""
+        if not self.admin_token:
+            self.log_test("Get Recovery Settings", False, "No admin token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        try:
+            response = requests.get(f"{self.api_url}/admin/recovery-settings", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                self.original_pp = data.get('pp_battery_percent', 60.5)
+                self.original_mc_smf = data.get('mc_smf_battery_percent', 58.0)
+                details += f", PP: {self.original_pp}%, MC/SMF: {self.original_mc_smf}%"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Get Recovery Settings", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Recovery Settings", False, f"Error: {str(e)}")
+            return False
+
+    def test_recovery_settings_update(self):
+        """Test updating recovery settings"""
+        if not self.admin_token:
+            self.log_test("Update Recovery Settings", False, "No admin token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Update with test values
+        test_settings = {
+            "pp_battery_percent": 65.0,
+            "mc_smf_battery_percent": 62.0
         }
         
         try:
-            response = requests.post(f"{self.api_url}/auth/login", json=invalid_login, timeout=10)
-            success = response.status_code == 401  # Should fail with 401
-            details = f"Status: {response.status_code} (Expected: 401)"
+            response = requests.put(f"{self.api_url}/admin/recovery-settings", json=test_settings, headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
             
-            if response.status_code == 401:
-                details += ", Correctly rejected invalid credentials"
-            else:
-                details += f", Unexpected response: {response.text}"
+            if success:
+                details += f", Settings updated to PP: {test_settings['pp_battery_percent']}%, MC/SMF: {test_settings['mc_smf_battery_percent']}%"
                 
-            self.log_test("Invalid Login Check", success, details)
+                # Restore original settings
+                if hasattr(self, 'original_pp') and hasattr(self, 'original_mc_smf'):
+                    restore_settings = {
+                        "pp_battery_percent": self.original_pp,
+                        "mc_smf_battery_percent": self.original_mc_smf
+                    }
+                    requests.put(f"{self.api_url}/admin/recovery-settings", json=test_settings, headers=headers, timeout=10)
+                    details += f", Restored to original values"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Update Recovery Settings", success, details)
             return success
         except Exception as e:
-            self.log_test("Invalid Login Check", False, f"Error: {str(e)}")
+            self.log_test("Update Recovery Settings", False, f"Error: {str(e)}")
             return False
 
     def create_test_image(self):
