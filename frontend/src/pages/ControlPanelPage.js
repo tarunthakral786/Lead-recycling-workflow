@@ -160,63 +160,73 @@ export default function ControlPanelPage({ user }) {
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="bg-purple-600 border-b border-purple-700 shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               onClick={() => navigate('/')}
               data-testid="back-button"
-              className="h-12 px-4 bg-purple-700 hover:bg-purple-800 text-white border-0 rounded-lg"
+              className="h-10 sm:h-12 px-3 sm:px-4 bg-purple-700 hover:bg-purple-800 text-white border-0 rounded-lg"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-white" data-testid="control-panel-title">TT Admin Control Panel</h1>
-              <p className="text-purple-100">Master User Controls</p>
+              <h1 className="text-lg sm:text-2xl font-bold text-white" data-testid="control-panel-title">TT Control Panel</h1>
+              <p className="text-xs sm:text-base text-purple-100">Master User Controls</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {loading ? (
           <div className="text-center py-12">
             <div className="text-2xl font-bold text-slate-700">Loading...</div>
           </div>
         ) : (
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 h-14 mb-6">
-              <TabsTrigger value="users" className="text-lg font-bold">Users ({users.length})</TabsTrigger>
-              <TabsTrigger value="entries" className="text-lg font-bold">Entries ({entries.length + drossEntries.length})</TabsTrigger>
-              <TabsTrigger value="sales" className="text-lg font-bold">Sales ({sales.length})</TabsTrigger>
-              <TabsTrigger value="settings" className="text-lg font-bold">Settings</TabsTrigger>
+            {/* Mobile-friendly tabs - scrollable on small screens */}
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 sm:gap-0 mb-4 sm:mb-6 bg-slate-200 p-1 rounded-lg">
+              <TabsTrigger value="users" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
+                Users ({users.length})
+              </TabsTrigger>
+              <TabsTrigger value="entries" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
+                Entries ({entries.length + drossEntries.length})
+              </TabsTrigger>
+              <TabsTrigger value="sales" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
+                Sales ({sales.length})
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
+                Settings
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users">
-              <Card className="bg-white rounded-xl p-6 mb-6">
+              <Card className="bg-white rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
                 <Button
                   onClick={() => setShowAddUser(true)}
                   data-testid="add-user-button"
-                  className="h-12 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold"
+                  className="w-full sm:w-auto h-12 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-base"
                 >
                   <UserPlus className="w-5 h-5 mr-2" />
                   Add New User
                 </Button>
               </Card>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {users.map((u) => (
-                  <Card key={u.id} className="bg-white rounded-lg p-6">
-                    <div className="flex justify-between items-center">
+                  <Card key={u.id} className="bg-white rounded-lg p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div>
-                        <p className="text-xl font-bold text-slate-900">{u.name}</p>
-                        <p className="text-base text-slate-600">{u.email}</p>
+                        <p className="text-lg sm:text-xl font-bold text-slate-900">{u.name}</p>
+                        <p className="text-sm sm:text-base text-slate-600 break-all">{u.email}</p>
                       </div>
                       {u.name !== 'TT' && u.name !== 'Factory' && (
                         <Button
                           onClick={() => handleDeleteUser(u.id)}
-                          className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 mr-2 sm:mr-0" />
+                          <span className="sm:hidden">Delete User</span>
                         </Button>
                       )}
                     </div>
@@ -226,76 +236,94 @@ export default function ControlPanelPage({ user }) {
             </TabsContent>
 
             <TabsContent value="entries">
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-slate-900">Refining & Recycling Entries</h3>
-                {entries.map((entry) => (
-                  <Card key={entry.id} className="bg-white rounded-lg p-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-lg font-bold text-slate-900">{entry.entry_type.toUpperCase()} - {entry.user_name}</p>
-                        <p className="text-sm text-slate-600">{formatDateTime(entry.timestamp)} | {entry.batches.length} batch(es)</p>
-                      </div>
-                      <Button
-                        onClick={() => handleDeleteEntry(entry.id)}
-                        data-testid={`delete-entry-${entry.id}`}
-                        className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </Button>
-                    </div>
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900">Refining & Recycling Entries</h3>
+                {entries.length === 0 ? (
+                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
+                    No entries yet
                   </Card>
-                ))}
+                ) : (
+                  entries.map((entry) => (
+                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div>
+                          <p className="text-base sm:text-lg font-bold text-slate-900">{entry.entry_type.toUpperCase()} - {entry.user_name}</p>
+                          <p className="text-xs sm:text-sm text-slate-600">{formatDateTime(entry.timestamp)} | {entry.batches.length} batch(es)</p>
+                        </div>
+                        <Button
+                          onClick={() => handleDeleteEntry(entry.id)}
+                          data-testid={`delete-entry-${entry.id}`}
+                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+                )}
 
-                <h3 className="text-xl font-bold text-slate-900 mt-8">HIGH LEAD Recovery Entries</h3>
-                {drossEntries.map((entry) => (
-                  <Card key={entry.id} className="bg-white rounded-lg p-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-lg font-bold text-yellow-700">HIGH LEAD - {entry.user_name}</p>
-                        <p className="text-sm text-slate-600">{formatDateTime(entry.timestamp)} | {entry.batches.length} batch(es)</p>
-                      </div>
-                      <Button
-                        onClick={() => handleDeleteDrossEntry(entry.id)}
-                        className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </Button>
-                    </div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mt-6 sm:mt-8">HIGH LEAD Recovery Entries</h3>
+                {drossEntries.length === 0 ? (
+                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
+                    No dross entries yet
                   </Card>
-                ))}
+                ) : (
+                  drossEntries.map((entry) => (
+                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div>
+                          <p className="text-base sm:text-lg font-bold text-yellow-700">HIGH LEAD - {entry.user_name}</p>
+                          <p className="text-xs sm:text-sm text-slate-600">{formatDateTime(entry.timestamp)} | {entry.batches.length} batch(es)</p>
+                        </div>
+                        <Button
+                          onClick={() => handleDeleteDrossEntry(entry.id)}
+                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="sales">
-              <div className="space-y-4">
-                {sales.map((sale) => (
-                  <Card key={sale.id} className="bg-white rounded-lg p-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-lg font-bold text-slate-900">{sale.party_name}</p>
-                        <p className="text-sm text-slate-600">{formatDateTime(sale.timestamp)} | {sale.quantity_kg} kg by {sale.user_name}</p>
-                      </div>
-                      <Button
-                        onClick={() => handleDeleteSale(sale.id)}
-                        className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </Button>
-                    </div>
+              <div className="space-y-3 sm:space-y-4">
+                {sales.length === 0 ? (
+                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
+                    No sales yet
                   </Card>
-                ))}
+                ) : (
+                  sales.map((sale) => (
+                    <Card key={sale.id} className="bg-white rounded-lg p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div>
+                          <p className="text-base sm:text-lg font-bold text-slate-900">{sale.party_name}</p>
+                          <p className="text-xs sm:text-sm text-slate-600">{formatDateTime(sale.timestamp)} | {sale.quantity_kg} kg by {sale.user_name}</p>
+                        </div>
+                        <Button
+                          onClick={() => handleDeleteSale(sale.id)}
+                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="settings">
-              <Card className="bg-white rounded-xl p-8">
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">Battery Recovery Percentages</h3>
-                <p className="text-base text-slate-600 mb-6">Adjust recovery percentages for battery recycling calculations. Changes apply to new entries only.</p>
+              <Card className="bg-white rounded-xl p-4 sm:p-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">Battery Recovery Percentages</h3>
+                <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">Adjust recovery percentages for battery recycling calculations. Changes apply to new entries only.</p>
                 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div>
                     <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
                       PP Battery Recovery %
@@ -305,7 +333,7 @@ export default function ControlPanelPage({ user }) {
                       step="0.1"
                       value={settings.pp_battery_percent}
                       onChange={(e) => setSettings({ ...settings, pp_battery_percent: parseFloat(e.target.value) })}
-                      className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
+                      className="h-14 sm:h-16 text-xl sm:text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
                     />
                   </div>
 
@@ -318,14 +346,14 @@ export default function ControlPanelPage({ user }) {
                       step="0.1"
                       value={settings.mc_smf_battery_percent}
                       onChange={(e) => setSettings({ ...settings, mc_smf_battery_percent: parseFloat(e.target.value) })}
-                      className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
+                      className="h-14 sm:h-16 text-xl sm:text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
                     />
                   </div>
 
                   <Button
                     onClick={handleUpdateSettings}
                     data-testid="save-settings-button"
-                    className="w-full h-14 text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg rounded-lg"
+                    className="w-full h-12 sm:h-14 text-lg sm:text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg rounded-lg"
                   >
                     <Settings className="w-5 h-5 mr-2" />
                     Save Settings
@@ -338,9 +366,9 @@ export default function ControlPanelPage({ user }) {
       </div>
 
       <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Add New User</DialogTitle>
+            <DialogTitle className="text-xl sm:text-2xl font-bold">Add New User</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
