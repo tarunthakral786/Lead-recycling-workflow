@@ -303,7 +303,9 @@ async def create_refining_entry(
             dross_2nd_image=base64.b64encode(await files[file_idx + 2].read()).decode('utf-8'),
             dross_3rd_kg=batch_data['dross_3rd_kg'],
             dross_3rd_image=base64.b64encode(await files[file_idx + 3].read()).decode('utf-8'),
+            dross_remarks=batch_data.get('dross_remarks', ''),
             pure_lead_kg=batch_data['pure_lead_kg'],
+            pure_lead_pieces=batch_data.get('pure_lead_pieces', 0),
             pure_lead_image=base64.b64encode(await files[file_idx + 4].read()).decode('utf-8')
         )
         batches.append(batch)
