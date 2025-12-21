@@ -20,7 +20,7 @@ export default function DrossRecyclingEntryPage({ user }) {
     dross_type: 'initial',
     quantity_sent: '',
     high_lead_recovered: '',
-    spectro_image: null
+    spectro_images: [] // Multiple images support
   }]);
   const [imagePreviews, setImagePreviews] = useState([{}]);
 
@@ -29,7 +29,7 @@ export default function DrossRecyclingEntryPage({ user }) {
       dross_type: 'initial',
       quantity_sent: '',
       high_lead_recovered: '',
-      spectro_image: null
+      spectro_images: []
     }]);
     setImagePreviews([...imagePreviews, {}]);
   };
@@ -41,22 +41,49 @@ export default function DrossRecyclingEntryPage({ user }) {
     }
   };
 
-  const handleFileChange = async (batchIndex, file) => {
-    if (!file) return;
+  // Handle multiple files
+  const handleMultipleFileChange = async (batchIndex, files) => {
+    if (!files || files.length === 0) return;
     
-    const compressedFile = await compressImage(file);
+    const compressedFiles = [];
+    const previewUrls = [];
+    
+    for (const file of Array.from(files)) {
+      const compressedFile = await compressImage(file);
+      compressedFiles.push(compressedFile);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previewUrls.push(reader.result);
+        if (previewUrls.length === files.length) {
+          const newPreviews = [...imagePreviews];
+          newPreviews[batchIndex] = { 
+            ...newPreviews[batchIndex], 
+            spectro_images: [...(newPreviews[batchIndex]?.spectro_images || []), ...previewUrls]
+          };
+          setImagePreviews(newPreviews);
+        }
+      };
+      reader.readAsDataURL(compressedFile);
+    }
     
     const newBatches = [...batches];
-    newBatches[batchIndex].spectro_image = compressedFile;
+    newBatches[batchIndex].spectro_images = [...(newBatches[batchIndex].spectro_images || []), ...compressedFiles];
     setBatches(newBatches);
+  };
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const newPreviews = [...imagePreviews];
-      newPreviews[batchIndex] = { spectro_image: reader.result };
+  // Remove a specific image
+  const removeImage = (batchIndex, imageIndex) => {
+    const newBatches = [...batches];
+    newBatches[batchIndex].spectro_images = newBatches[batchIndex].spectro_images.filter((_, i) => i !== imageIndex);
+    setBatches(newBatches);
+    
+    const newPreviews = [...imagePreviews];
+    if (newPreviews[batchIndex]?.spectro_images) {
+      newPreviews[batchIndex].spectro_images = newPreviews[batchIndex].spectro_images.filter((_, i) => i !== imageIndex);
       setImagePreviews(newPreviews);
-    };
-    reader.readAsDataURL(compressedFile);
+    }
   };
 
   const handleInputChange = (batchIndex, field, value) => {
@@ -68,11 +95,11 @@ export default function DrossRecyclingEntryPage({ user }) {
   const handleSubmit = async () => {
     // Validate all batches
     const incompleteBatches = batches.filter(b => 
-      !b.quantity_sent || !b.high_lead_recovered || !b.spectro_image
+      !b.quantity_sent || !b.high_lead_recovered || b.spectro_images.length === 0
     );
 
     if (incompleteBatches.length > 0) {
-      toast.error('Please complete all batch fields');
+      toast.error('Please complete all batch fields including at least one photo');
       return;
     }
 
@@ -89,7 +116,10 @@ export default function DrossRecyclingEntryPage({ user }) {
       form.append('batches_data', JSON.stringify(batchesData));
       
       batches.forEach(batch => {
-        form.append('files', batch.spectro_image);
+        // Send first image for backward compatibility
+        if (batch.spectro_images[0]) {
+          form.append('files', batch.spectro_images[0]);
+        }
       });
 
       const token = localStorage.getItem('token');
@@ -111,7 +141,66 @@ export default function DrossRecyclingEntryPage({ user }) {
 
   const canSubmit = () => {
     return batches.every(batch => 
-      batch.quantity_sent && batch.high_lead_recovered && batch.spectro_image
+      batch.quantity_sent && batch.high_lead_recovered && batch.spectro_images.length > 0
+    );
+  };
+
+  // Render multiple image upload
+  const renderMultiImageUpload = (batchIndex) => {
+    const images = imagePreviews[batchIndex]?.spectro_images || [];
+    
+    return (
+      <div>
+        <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+          Spectro Report Images
+        </Label>
+        
+        {/* Existing images */}
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {images.map((img, imgIdx) => (
+              <div key={imgIdx} className="relative">
+                <img src={img} alt={`Preview ${imgIdx + 1}`} className="h-24 w-full object-cover rounded-lg border-2 border-slate-200" />
+                <button
+                  onClick={() => removeImage(batchIndex, imgIdx)}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Add more images */}
+        <label
+          htmlFor={`spectro-${batchIndex}`}
+          className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-yellow-50 hover:border-yellow-300 transition-colors cursor-pointer h-32 flex flex-col items-center justify-center gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <Camera className="w-8 h-8 text-slate-400" />
+            <Plus className="w-6 h-6 text-slate-400" />
+          </div>
+          <span className="text-base font-semibold text-slate-500">
+            {images.length > 0 ? 'Add more photos' : 'Tap to capture spectro report'}
+          </span>
+          <span className="text-xs text-slate-400">Multiple images allowed</span>
+        </label>
+        
+        <input
+          id={`spectro-${batchIndex}`}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={(e) => handleMultipleFileChange(batchIndex, e.target.files)}
+          className="hidden"
+        />
+        
+        {images.length > 0 && (
+          <p className="text-sm text-slate-500 mt-1">{images.length} photo(s) added</p>
+        )}
+      </div>
     );
   };
 
@@ -129,7 +218,7 @@ export default function DrossRecyclingEntryPage({ user }) {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Add Dross Recycling Entry</h1>
+              <h1 className="text-2xl font-bold text-slate-900">Add HIGH LEAD Recovery</h1>
               <p className="text-base text-slate-600">{batches.length} batch(es)</p>
             </div>
           </div>
@@ -190,7 +279,7 @@ export default function DrossRecyclingEntryPage({ user }) {
 
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  High Lead Recovered (KG)
+                  HIGH LEAD Recovered (KG)
                 </Label>
                 <Input
                   type="number"
@@ -202,32 +291,7 @@ export default function DrossRecyclingEntryPage({ user }) {
                 />
               </div>
 
-              <div>
-                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Spectro Report Image
-                </Label>
-                <label
-                  htmlFor={`spectro-${batchIndex}`}
-                  className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-yellow-50 hover:border-yellow-300 transition-colors cursor-pointer h-48 flex flex-col items-center justify-center gap-3"
-                >
-                  {imagePreviews[batchIndex]?.spectro_image ? (
-                    <img src={imagePreviews[batchIndex].spectro_image} alt="Preview" className="h-40 object-contain" />
-                  ) : (
-                    <>
-                      <Camera className="w-12 h-12 text-slate-400" />
-                      <span className="text-lg font-semibold text-slate-500">Tap to capture spectro report</span>
-                    </>
-                  )}
-                </label>
-                <input
-                  id={`spectro-${batchIndex}`}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => handleFileChange(batchIndex, e.target.files[0])}
-                  className="hidden"
-                />
-              </div>
+              {renderMultiImageUpload(batchIndex)}
             </div>
           </Card>
         ))}
