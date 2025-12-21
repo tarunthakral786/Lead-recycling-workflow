@@ -9,6 +9,7 @@ class LeadTrackAPITester:
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.token = None
+        self.admin_token = None
         self.user_id = None
         self.tests_run = 0
         self.tests_passed = 0
