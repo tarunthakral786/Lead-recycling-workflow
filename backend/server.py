@@ -812,7 +812,8 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         remelted_lead_in_stock=round(remelted_lead_in_stock, 2),
         total_dross=round(total_dross, 2),
         total_high_lead=round(total_high_lead, 2),
-        total_rml_purchased=round(total_rml_purchased, 2)
+        total_rml_purchased=round(total_rml_purchased, 2),
+        antimony_recoverable=round(antimony_recoverable, 2)
     )
 
 @api_router.get("/dross/export/excel")
