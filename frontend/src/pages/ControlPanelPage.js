@@ -22,6 +22,9 @@ export default function ControlPanelPage({ user }) {
   const [settings, setSettings] = useState({ pp_battery_percent: 60.5, mc_smf_battery_percent: 57.5, hr_battery_percent: 50.0 });
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '' });
 
   useEffect(() => {
