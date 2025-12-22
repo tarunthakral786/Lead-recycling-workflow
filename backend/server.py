@@ -519,6 +519,107 @@ async def delete_dross_recycling_entry(entry_id: str, admin: dict = Depends(requ
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"message": "Dross recycling entry deleted successfully"}
 
+# RML Purchases
+@api_router.post("/rml-purchases")
+async def create_rml_purchase(
+    batches_data: str = Form(...),
+    files: List[UploadFile] = File(...),
+    entry_date: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_user)
+):
+    import json
+    batches_json = json.loads(batches_data)
+    
+    batches = []
+    for idx, batch_data in enumerate(batches_json):
+        image = base64.b64encode(await files[idx].read()).decode('utf-8')
+        
+        # Generate SKU based on SB percentage
+        sb = batch_data['sb_percentage']
+        if sb <= 1:
+            sku = f"RML-SB-LOW-{sb}%"
+        elif sb <= 3:
+            sku = f"RML-SB-MED-{sb}%"
+        else:
+            sku = f"RML-SB-HIGH-{sb}%"
+        
+        batch = RMLPurchaseBatch(
+            quantity_kg=batch_data['quantity_kg'],
+            pieces=batch_data['pieces'],
+            sb_percentage=batch_data['sb_percentage'],
+            remarks=batch_data.get('remarks', ''),
+            image=image,
+            sku=sku
+        )
+        batches.append(batch)
+    
+    entry = RMLPurchaseEntry(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        batches=batches
+    )
+    
+    doc = entry.model_dump()
+    
+    # Handle custom entry date
+    if entry_date:
+        from datetime import datetime as dt
+        custom_date = dt.fromisoformat(entry_date + "T12:00:00")
+        doc['timestamp'] = custom_date.isoformat()
+    else:
+        doc['timestamp'] = doc['timestamp'].isoformat()
+    
+    for batch in doc['batches']:
+        batch['timestamp'] = batch['timestamp'].isoformat()
+    
+    await db.rml_purchases.insert_one(doc)
+    return {"id": entry.id, "message": "RML purchase created successfully"}
+
+@api_router.get("/rml-purchases")
+async def get_rml_purchases(current_user: dict = Depends(get_current_user)):
+    entries = await db.rml_purchases.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    
+    for entry in entries:
+        if isinstance(entry['timestamp'], str):
+            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        for batch in entry.get('batches', []):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            batch.pop('image', None)  # Don't return image data in list
+    
+    return entries
+
+@api_router.get("/rml-purchases/skus")
+async def get_rml_skus(current_user: dict = Depends(get_current_user)):
+    """Get available RML SKUs for use in refining"""
+    entries = await db.rml_purchases.find({}, {"_id": 0}).to_list(1000)
+    
+    # Aggregate SKUs with available quantities
+    skus = {}
+    for entry in entries:
+        for batch in entry.get('batches', []):
+            sku = batch.get('sku', '')
+            if sku:
+                if sku not in skus:
+                    skus[sku] = {
+                        'sku': sku,
+                        'sb_percentage': batch.get('sb_percentage', 0),
+                        'total_quantity_kg': 0,
+                        'total_pieces': 0
+                    }
+                skus[sku]['total_quantity_kg'] += batch.get('quantity_kg', 0)
+                skus[sku]['total_pieces'] += batch.get('pieces', 0)
+    
+    return list(skus.values())
+
+@api_router.delete("/admin/rml-purchases/{entry_id}")
+async def delete_rml_purchase(entry_id: str, admin: dict = Depends(require_admin)):
+    result = await db.rml_purchases.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "RML purchase deleted successfully"}
+
 @api_router.get("/entries")
 async def get_entries(current_user: dict = Depends(get_current_user)):
     entries = await db.entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
