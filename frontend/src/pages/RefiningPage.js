@@ -44,7 +44,8 @@ export default function RefiningPage({ user }) {
   
   // Each batch tracks its own saved state per step
   const [batches, setBatches] = useState([{
-    input_source: 'manual', // 'manual' or SKU name
+    input_source: 'manual', // 'manual', 'SANTOSH', or RML SKU name
+    sb_percentage: '', // Required when SANTOSH is selected
     lead_ingot_kg: '',
     lead_ingot_pieces: '',
     lead_ingot_images: [], // Multiple images support
@@ -67,6 +68,7 @@ export default function RefiningPage({ user }) {
   const addBatch = () => {
     setBatches([...batches, {
       input_source: 'manual',
+      sb_percentage: '',
       lead_ingot_kg: '',
       lead_ingot_pieces: '',
       lead_ingot_images: [],
