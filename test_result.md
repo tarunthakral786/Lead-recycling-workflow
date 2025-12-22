@@ -107,9 +107,11 @@ user_problem_statement: |
   - Refining module (lead ingots → pure lead through 3-stage dross)
   - Recycling module (battery scrap → remelted lead)
   - Dross Recycling module (dross → HIGH LEAD)
+  - RML Purchases module (purchase remelted lead inventory)
+  - Sales module (sell from inventory with SKU-based tracking)
   - Two user roles: Factory (standard) and TT (master admin)
   - TT has Control Panel with admin rights
-  - Step-by-step batch entry in Refining with individual saves
+  - Dashboard with 6 key metrics: Pure Lead, RML Stock, Receivable, High Lead, Total Dross, Antimony
 
 backend:
   - task: "User authentication (login)"
@@ -130,7 +132,7 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
@@ -142,13 +144,13 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "DELETE /api/admin/users/{id} endpoint tested via curl - working"
 
-  - task: "Admin - Recovery settings (PP & MC/SMF %)"
+  - task: "Dashboard Summary API"
     implemented: true
     working: true
     file: "/app/backend/server.py"
@@ -158,7 +160,31 @@ backend:
     status_history:
       - working: true
         agent: "main"
-        comment: "GET/PUT /api/admin/recovery-settings endpoints implemented"
+        comment: "Updated /api/summary to return new stats: pure_lead_stock, rml_stock, total_receivable, high_lead_stock, total_dross, antimony_recoverable. Tested via curl - all values correct."
+
+  - task: "Sales - Create sale with SKU"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/sales now accepts sku_type parameter (Pure Lead, High Lead, or RML SKU name). Tested via curl - sale created and Pure Lead stock reduced correctly from 265 to 254.5 kg."
+
+  - task: "Sales - Available SKUs API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/sales/available-skus returns list of SKUs with available stock. Tested via curl - returns Pure Lead (254.5 kg) and RML SKUs with SB% and available quantities."
 
   - task: "Get users list for login page"
     implemented: true
@@ -185,53 +211,67 @@ frontend:
         agent: "main"
         comment: "Shows Factory, TT, Umesh Thakral - test users removed"
 
+  - task: "Dashboard with 6 key metrics"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/HomePage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Dashboard shows all 6 metrics: Pure Lead, RML Stock, Receivable, High Lead, Total Dross, Antimony. Screenshot verified - values displayed correctly."
+
+  - task: "Sales Page with SKU selection"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/SalesPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Sales page shows available inventory, SKU dropdown with stock levels and SB%, party name input, quantity input. Screenshot verified - dropdown shows Pure Lead and RML SKUs correctly."
+
   - task: "TT Control Panel - Users tab"
     implemented: true
     working: true
     file: "/app/frontend/src/pages/ControlPanelPage.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Add user and delete user UI visible, backend APIs tested"
-
-  - task: "TT Control Panel - Recovery Settings tab"
-    implemented: true
-    working: true
-    file: "/app/frontend/src/pages/ControlPanelPage.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "PP and MC/SMF recovery percentage inputs available"
 
   - task: "Refining - Step-by-step batch workflow"
     implemented: true
     working: "NA"
     file: "/app/frontend/src/pages/RefiningPage.js"
     stuck_count: 0
-    priority: "high"
-    needs_retesting: true
+    priority: "medium"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Completely rewritten with save-per-batch workflow. Step 1-3 with individual batch saves, then Next Step button."
+        comment: "Completely rewritten with save-per-batch workflow. Add batch button removed from step 2 as per user request."
 
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 1
+  version: "1.1"
+  test_sequence: 2
   run_ui: true
 
 test_plan:
   current_focus:
-    - "TT Control Panel - Users tab"
-    - "TT Control Panel - Recovery Settings tab"
-    - "Refining - Step-by-step batch workflow"
+    - "Dashboard Summary API"
+    - "Sales - Create sale with SKU"
+    - "Sales - Available SKUs API"
+    - "Dashboard with 6 key metrics"
+    - "Sales Page with SKU selection"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -239,20 +279,38 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: |
-      Fixed the following issues:
-      1. Removed test users from login page - only Factory, TT, Umesh Thakral visible
-      2. Verified add/delete user APIs work via curl
-      3. Rewrote RefiningPage.js with new step-by-step batch workflow:
-         - User enters batch details → clicks "Save Batch X" 
-         - Can add multiple batches, each saved individually
-         - "Next Step" only enabled after ALL batches saved for current step
-         - Repeats for Steps 2 & 3, then final submit
+      Implemented new Sales Module and updated Dashboard:
+      
+      BACKEND CHANGES:
+      1. Updated SaleEntry model to include sku_type field
+      2. Updated /api/sales POST endpoint to accept sku_type
+      3. Created new /api/sales/available-skus endpoint to list all sellable SKUs with stock
+      4. Updated /api/summary to return new simplified stats:
+         - pure_lead_stock: Pure Lead produced - Pure Lead sold
+         - rml_stock: RML purchased - RML used in refining - RML sold
+         - total_receivable: Recycling receivable - SANTOSH usage
+         - high_lead_stock: High Lead recovered - High Lead sold
+         - total_dross: Sum of all dross from refining
+         - antimony_recoverable: Sum of (SB% × quantity) from all refining batches
+      5. Fixed bug in RML purchases endpoint (line 560: sb variable was undefined)
+      
+      FRONTEND CHANGES:
+      1. Rewrote SalesPage.js with:
+         - Date picker for sale date
+         - Available inventory preview showing all SKUs with stock
+         - SKU dropdown showing product name, SB%, and available quantity
+         - Validation to prevent selling more than available stock
+      2. HomePage.js already had correct field names for dashboard stats
+      
+      TESTING DONE:
+      - API tests via curl: /api/summary, /api/sales/available-skus, POST /api/sales all working
+      - Screenshots verified: Dashboard shows 6 metrics, Sales page shows SKU dropdown with stock
       
       Please test:
-      1. Control Panel - Add a new user, verify it appears on login page
-      2. Control Panel - Delete a user (not TT or Factory)
-      3. Control Panel - Update recovery settings
-      4. Refining - Test the new save-per-batch workflow
+      1. Login as TT and verify dashboard shows all 6 metrics correctly
+      2. Navigate to Sales page and verify SKU dropdown populates
+      3. Create a sale for Pure Lead and verify stock reduces on dashboard
+      4. Create a sale for an RML SKU and verify that specific SKU stock reduces
       
       Credentials:
       - TT: tt@leadtrack.com / 9786
