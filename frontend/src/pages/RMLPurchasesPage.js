@@ -282,9 +282,9 @@ export default function RMLPurchasesPage({ user }) {
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 <h3 className="text-2xl font-bold text-slate-900">Batch {batchIndex + 1}</h3>
-                {batch.sb_percentage && (
+                {batch.sb_percentage && batch.remarks && (
                   <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-bold rounded-full">
-                    SKU: {getSKUPreview(batch.sb_percentage)} ({batch.sb_percentage}%)
+                    SKU: {getSKUPreview(batch)}
                   </span>
                 )}
               </div>
