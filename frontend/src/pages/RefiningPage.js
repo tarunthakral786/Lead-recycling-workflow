@@ -217,24 +217,38 @@ export default function RefiningPage({ user }) {
     try {
       const form = new FormData();
       
-      const batchesData = batches.map(batch => ({
-        input_source: batch.input_source || 'manual',
-        sb_percentage: batch.input_source === 'SANTOSH' ? parseFloat(batch.sb_percentage) : null,
-        lead_ingot_kg: parseFloat(batch.lead_ingot_kg),
-        lead_ingot_pieces: parseInt(batch.lead_ingot_pieces),
-        initial_dross_kg: parseFloat(batch.initial_dross_kg),
-        dross_2nd_kg: parseFloat(batch.dross_2nd_kg),
-        dross_3rd_kg: parseFloat(batch.dross_3rd_kg),
-        dross_remarks: batch.dross_remarks || '',
-        pure_lead_kg: parseFloat(batch.pure_lead_kg),
-        pure_lead_pieces: parseInt(batch.pure_lead_pieces),
-        // Include image counts for backend processing
-        lead_ingot_image_count: batch.lead_ingot_images.length,
-        initial_dross_image_count: batch.initial_dross_images.length,
-        dross_2nd_image_count: batch.dross_2nd_images.length,
-        dross_3rd_image_count: batch.dross_3rd_images.length,
-        pure_lead_image_count: batch.pure_lead_images.length
-      }));
+      const batchesData = batches.map(batch => {
+        // Determine SB percentage based on input source
+        let sbPercentage = null;
+        if (batch.input_source === 'SANTOSH') {
+          sbPercentage = parseFloat(batch.sb_percentage);
+        } else if (batch.input_source !== 'manual') {
+          // RML SKU selected - get SB% from the SKU
+          const selectedSku = rmlSkus.find(sku => sku.sku === batch.input_source);
+          if (selectedSku) {
+            sbPercentage = selectedSku.sb_percentage;
+          }
+        }
+        
+        return {
+          input_source: batch.input_source || 'manual',
+          sb_percentage: sbPercentage,
+          lead_ingot_kg: parseFloat(batch.lead_ingot_kg),
+          lead_ingot_pieces: parseInt(batch.lead_ingot_pieces),
+          initial_dross_kg: parseFloat(batch.initial_dross_kg),
+          dross_2nd_kg: parseFloat(batch.dross_2nd_kg),
+          dross_3rd_kg: parseFloat(batch.dross_3rd_kg),
+          dross_remarks: batch.dross_remarks || '',
+          pure_lead_kg: parseFloat(batch.pure_lead_kg),
+          pure_lead_pieces: parseInt(batch.pure_lead_pieces),
+          // Include image counts for backend processing
+          lead_ingot_image_count: batch.lead_ingot_images.length,
+          initial_dross_image_count: batch.initial_dross_images.length,
+          dross_2nd_image_count: batch.dross_2nd_images.length,
+          dross_3rd_image_count: batch.dross_3rd_images.length,
+          pure_lead_image_count: batch.pure_lead_images.length
+        };
+      });
       
       form.append('batches_data', JSON.stringify(batchesData));
       form.append('entry_date', entryDate); // Send the selected date
