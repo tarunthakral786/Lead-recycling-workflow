@@ -540,14 +540,23 @@ async def create_rml_purchase(
     for idx, batch_data in enumerate(batches_json):
         image = base64.b64encode(await files[idx].read()).decode('utf-8')
         
-        # Generate SKU based on SB percentage
-        sb = batch_data['sb_percentage']
-        if sb <= 1:
-            sku = f"RML-SB-LOW-{sb}%"
-        elif sb <= 3:
-            sku = f"RML-SB-MED-{sb}%"
+        # Generate SKU format: "remarks, sb%, date of inward"
+        remarks = batch_data.get('remarks', 'RML')
+        if not remarks:
+            remarks = 'RML'
+        
+        # Use entry_date for the date of inward
+        if entry_date:
+            inward_date = entry_date  # Format: YYYY-MM-DD
+            # Convert to DD/MM/YYYY format
+            from datetime import datetime as dt
+            date_obj = dt.fromisoformat(entry_date)
+            formatted_date = date_obj.strftime("%d/%m/%Y")
         else:
-            sku = f"RML-SB-HIGH-{sb}%"
+            from datetime import datetime as dt
+            formatted_date = dt.now().strftime("%d/%m/%Y")
+        
+        sku = f"{remarks}, {sb}%, {formatted_date}"
         
         batch = RMLPurchaseBatch(
             quantity_kg=batch_data['quantity_kg'],
