@@ -87,6 +87,16 @@ export default function HomePage({ user, onLogout }) {
             </p>
           </Card>
 
+          <Card className="bg-cyan-50 border-2 border-cyan-200 rounded-xl shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Atom className="w-6 h-6 text-cyan-700" />
+              <span className="text-xs font-bold text-cyan-700 uppercase">Antimony Recoverable</span>
+            </div>
+            <p className="text-2xl font-bold text-cyan-800" data-testid="antimony-stat">
+              {loading ? '...' : `${stats?.antimony_recoverable || 0} kg`}
+            </p>
+          </Card>
+
           <Card className="bg-yellow-50 border-2 border-yellow-200 rounded-xl shadow-sm p-4">
             <div className="flex items-center gap-2 mb-1">
               <FlaskConical className="w-6 h-6 text-yellow-700" />
