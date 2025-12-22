@@ -447,7 +447,15 @@ async def create_dross_recycling_entry(
     )
     
     doc = entry.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    
+    # Handle custom entry date
+    if entry_date:
+        from datetime import datetime as dt
+        custom_date = dt.fromisoformat(entry_date + "T12:00:00")
+        doc['timestamp'] = custom_date.isoformat()
+    else:
+        doc['timestamp'] = doc['timestamp'].isoformat()
+    
     for batch in doc['batches']:
         batch['timestamp'] = batch['timestamp'].isoformat()
     
