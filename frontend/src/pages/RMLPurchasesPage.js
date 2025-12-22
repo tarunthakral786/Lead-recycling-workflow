@@ -101,11 +101,11 @@ export default function RMLPurchasesPage({ user }) {
   const handleSubmit = async () => {
     // Validate all batches
     const incompleteBatches = batches.filter(b => 
-      !b.quantity_kg || !b.pieces || !b.sb_percentage || b.images.length === 0
+      !b.quantity_kg || !b.pieces || !b.sb_percentage || !b.remarks || b.images.length === 0
     );
 
     if (incompleteBatches.length > 0) {
-      toast.error('Please complete all batch fields (quantity, pieces, SB%, and at least one photo)');
+      toast.error('Please complete all fields (quantity, pieces, SB%, seller name/remark, and at least one photo)');
       return;
     }
 
