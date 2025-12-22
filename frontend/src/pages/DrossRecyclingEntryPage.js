@@ -118,6 +118,7 @@ export default function DrossRecyclingEntryPage({ user }) {
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
+      form.append('entry_date', entryDate); // Send the selected date
       
       batches.forEach(batch => {
         // Send first image for backward compatibility
