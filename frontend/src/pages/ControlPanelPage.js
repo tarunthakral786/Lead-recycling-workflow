@@ -469,6 +469,43 @@ export default function ControlPanelPage({ user }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={showChangePassword} onOpenChange={setShowChangePassword}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-bold">Change Password</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4 mt-4">
+              <div className="bg-slate-100 rounded-lg p-4">
+                <p className="text-sm text-slate-500">Changing password for:</p>
+                <p className="text-lg font-bold text-slate-900">{selectedUser.name}</p>
+                <p className="text-sm text-slate-600">{selectedUser.email}</p>
+              </div>
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">New Password</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="h-12 text-lg px-4 w-full"
+                  placeholder="Enter new password"
+                  data-testid="new-password-input"
+                />
+              </div>
+              <Button
+                onClick={handleSubmitPasswordChange}
+                data-testid="submit-password-button"
+                className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              >
+                <Key className="w-5 h-5 mr-2" />
+                Update Password
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
