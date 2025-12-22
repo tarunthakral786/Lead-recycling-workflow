@@ -218,6 +218,8 @@ export default function RefiningPage({ user }) {
       const form = new FormData();
       
       const batchesData = batches.map(batch => ({
+        input_source: batch.input_source || 'manual',
+        sb_percentage: batch.input_source === 'SANTOSH' ? parseFloat(batch.sb_percentage) : null,
         lead_ingot_kg: parseFloat(batch.lead_ingot_kg),
         lead_ingot_pieces: parseInt(batch.lead_ingot_pieces),
         initial_dross_kg: parseFloat(batch.initial_dross_kg),
@@ -236,8 +238,6 @@ export default function RefiningPage({ user }) {
       
       form.append('batches_data', JSON.stringify(batchesData));
       form.append('entry_date', entryDate); // Send the selected date
-      
-      form.append('batches_data', JSON.stringify(batchesData));
       
       // Append all images in order - first image of each field for backward compatibility
       batches.forEach(batch => {
