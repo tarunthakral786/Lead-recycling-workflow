@@ -735,6 +735,13 @@ async def get_dross_data(current_user: dict = Depends(get_current_user)):
     dross_data.sort(key=lambda x: x['timestamp'], reverse=True)
     return dross_data
 
+@api_router.get("/dross/recoveries")
+async def get_dross_recoveries(current_user: dict = Depends(get_current_user)):
+    """Get dross recovery records - currently returns empty list as recoveries are tracked via dross-recycling entries"""
+    # This endpoint exists for backward compatibility with the frontend
+    # The actual HIGH LEAD recovery is tracked via /api/dross-recycling/entries
+    return []
+
 # Sales
 @api_router.post("/sales", response_model=SaleEntry)
 async def create_sale(sale_data: SaleCreate, current_user: dict = Depends(get_current_user)):
