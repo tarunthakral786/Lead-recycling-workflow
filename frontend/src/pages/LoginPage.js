@@ -75,7 +75,8 @@ export default function LoginPage({ onLogin }) {
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold text-slate-900 mb-2" data-testid="app-title">LeadTrack Pro</h1>
+            <img src="/spes-logo.png" alt="SPES PRO" className="h-24 w-auto mx-auto mb-4" />
+            <h1 className="text-5xl font-bold text-slate-900 mb-2" data-testid="app-title">SPES PRO</h1>
             <p className="text-xl text-slate-600">Select Account</p>
           </div>
 
