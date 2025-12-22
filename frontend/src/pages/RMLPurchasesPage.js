@@ -345,7 +345,7 @@ export default function RMLPurchasesPage({ user }) {
 
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Remarks (Optional)
+                  Seller Name / Remark <span className="text-red-500">*</span>
                 </Label>
                 <Textarea
                   value={batch.remarks}
