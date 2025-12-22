@@ -140,6 +140,7 @@ export default function RecyclingPage({ user }) {
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
+      form.append('entry_date', entryDate); // Send the selected date
       
       completeBatches.forEach(batch => {
         // Send first image for backward compatibility
