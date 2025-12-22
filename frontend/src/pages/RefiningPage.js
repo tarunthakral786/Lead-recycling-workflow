@@ -150,6 +150,10 @@ export default function RefiningPage({ user }) {
   const handleInputChange = (batchIndex, field, value) => {
     const newBatches = [...batches];
     newBatches[batchIndex][field] = value;
+    // Reset SB percentage when input source changes
+    if (field === 'input_source' && value !== 'SANTOSH') {
+      newBatches[batchIndex].sb_percentage = '';
+    }
     setBatches(newBatches);
   };
 
@@ -157,6 +161,10 @@ export default function RefiningPage({ user }) {
   const canSaveCurrentStep = (batchIndex) => {
     const batch = batches[batchIndex];
     if (step === 1) {
+      // If SANTOSH is selected, SB percentage is required
+      if (batch.input_source === 'SANTOSH' && !batch.sb_percentage) {
+        return false;
+      }
       return batch.lead_ingot_kg && batch.lead_ingot_pieces && batch.lead_ingot_images.length > 0;
     } else if (step === 2) {
       return batch.initial_dross_kg && batch.initial_dross_images.length > 0 && 
