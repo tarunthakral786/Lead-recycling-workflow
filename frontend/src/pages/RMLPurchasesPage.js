@@ -149,7 +149,7 @@ export default function RMLPurchasesPage({ user }) {
 
   const canSubmit = () => {
     return batches.every(batch => 
-      batch.quantity_kg && batch.pieces && batch.sb_percentage && batch.images.length > 0
+      batch.quantity_kg && batch.pieces && batch.sb_percentage && batch.remarks && batch.images.length > 0
     );
   };
 
