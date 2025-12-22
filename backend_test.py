@@ -641,7 +641,11 @@ class LeadTrackAPITester:
         
         # Entry management tests (only if authenticated)
         if self.token:
-            self.test_create_refining_entry()
+            self.test_dashboard_summary_api()
+            self.test_available_skus_api()
+            self.test_create_sale_api()
+            self.test_stock_reduction_after_sale()
+            self.test_get_sales_list()
             self.test_get_entries()
         
         # Security tests
