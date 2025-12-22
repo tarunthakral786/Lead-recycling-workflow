@@ -196,6 +196,38 @@ class LeadTrackAPITester:
             self.log_test("Admin Get Users", False, f"Error: {str(e)}")
             return False
 
+    def test_admin_change_password(self):
+        """Test admin change user password functionality"""
+        if not self.admin_token or not hasattr(self, 'test_user_id'):
+            self.log_test("Admin Change Password", False, "No admin token or test user")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Change password for the test user
+        new_password_data = {
+            "new_password": "NewTestPass456!"
+        }
+        
+        try:
+            response = requests.put(f"{self.api_url}/admin/users/{self.test_user_id}/password", 
+                                  json=new_password_data, headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", Password changed: {data.get('message', 'Success')}"
+                self.new_password = new_password_data['new_password']
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Admin Change Password", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Admin Change Password", False, f"Error: {str(e)}")
+            return False
+
     def test_admin_delete_user(self):
         """Test admin delete user functionality"""
         if not self.admin_token or not hasattr(self, 'test_user_id'):
