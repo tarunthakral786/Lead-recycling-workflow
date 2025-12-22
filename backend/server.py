@@ -572,7 +572,7 @@ async def create_rml_purchase(
             from datetime import datetime as dt
             formatted_date = dt.now().strftime("%d/%m/%Y")
         
-        sku = f"{remarks}, {sb}%, {formatted_date}"
+        sku = f"{remarks}, {batch_data['sb_percentage']}%, {formatted_date}"
         
         batch = RMLPurchaseBatch(
             quantity_kg=batch_data['quantity_kg'],
