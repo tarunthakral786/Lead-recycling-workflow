@@ -74,6 +74,10 @@ function App() {
             element={user ? <DrossRecyclingEntryPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
+            path="/rml-purchases" 
+            element={user ? <RMLPurchasesPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
             path="/control-panel" 
             element={user ? <ControlPanelPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
