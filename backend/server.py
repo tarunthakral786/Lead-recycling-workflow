@@ -319,6 +319,8 @@ async def create_refining_entry(
     
     for batch_data in batches_json:
         batch = RefiningBatch(
+            input_source=batch_data.get('input_source', 'manual'),
+            sb_percentage=batch_data.get('sb_percentage'),
             lead_ingot_kg=batch_data['lead_ingot_kg'],
             lead_ingot_pieces=batch_data['lead_ingot_pieces'],
             lead_ingot_image=base64.b64encode(await files[file_idx].read()).decode('utf-8'),
