@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, ArrowLeft, Plus, X, Info, Calendar } from 'lucide-react';
+import { Camera, ArrowLeft, Plus, X, Info, Calendar, Check } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -15,7 +15,6 @@ const API = `${BACKEND_URL}/api`;
 
 export default function RecyclingPage({ user }) {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   
   // Entry date for past-dated entries
@@ -24,9 +23,7 @@ export default function RecyclingPage({ user }) {
   const [batches, setBatches] = useState([{
     battery_type: 'PP',
     battery_kg: '',
-    battery_images: [], // Multiple images support
-    quantity_received: '',
-    remelted_lead_images: [] // Multiple images support
+    battery_images: []
   }]);
   const [imagePreviews, setImagePreviews] = useState([{}]);
 
@@ -34,9 +31,7 @@ export default function RecyclingPage({ user }) {
     setBatches([...batches, {
       battery_type: 'PP',
       battery_kg: '',
-      battery_images: [],
-      quantity_received: '',
-      remelted_lead_images: []
+      battery_images: []
     }]);
     setImagePreviews([...imagePreviews, {}]);
   };
@@ -59,7 +54,6 @@ export default function RecyclingPage({ user }) {
       const compressedFile = await compressImage(file);
       compressedFiles.push(compressedFile);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         previewUrls.push(reader.result);
@@ -80,7 +74,6 @@ export default function RecyclingPage({ user }) {
     setBatches(newBatches);
   };
 
-  // Remove a specific image from array
   const removeImage = (batchIndex, field, imageIndex) => {
     const newBatches = [...batches];
     newBatches[batchIndex][field] = newBatches[batchIndex][field].filter((_, i) => i !== imageIndex);
@@ -99,58 +92,40 @@ export default function RecyclingPage({ user }) {
     setBatches(newBatches);
   };
 
-  const calculateOutput = (batteryKg, batteryType) => {
+  const calculateReceivable = (batteryKg, batteryType) => {
     if (!batteryKg) return 0;
-    let percentage = 0.605; // PP default
+    let percentage = 0.605;
     if (batteryType === 'PP') percentage = 0.605;
     else if (batteryType === 'MC/SMF') percentage = 0.575;
     else if (batteryType === 'HR') percentage = 0.50;
     return (parseFloat(batteryKg) * percentage).toFixed(2);
   };
 
-  const calculateReceivable = (batteryKg, batteryType, quantityReceived) => {
-    const totalOutput = parseFloat(calculateOutput(batteryKg, batteryType));
-    const received = parseFloat(quantityReceived) || 0;
-    return (totalOutput - received).toFixed(2);
-  };
-
-  const calculateRecoveryPercent = (batteryKg, quantityReceived) => {
-    if (!batteryKg || !quantityReceived) return 0;
-    return ((parseFloat(quantityReceived) / parseFloat(batteryKg)) * 100).toFixed(2);
-  };
-
   const handleSubmit = async () => {
+    const completeBatches = batches.filter(batch => 
+      batch.battery_kg && batch.battery_images.length > 0
+    );
+
+    if (completeBatches.length === 0) {
+      toast.error('Please complete at least one battery input (weight + photo)');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Filter batches that have at least battery input complete (Step 1)
-      const completeBatches = batches.filter(batch => 
-        batch.battery_kg && batch.battery_images.length > 0
-      );
-
-      if (completeBatches.length === 0) {
-        toast.error('Please complete at least one battery input (weight + photo)');
-        setLoading(false);
-        return;
-      }
-
       const form = new FormData();
       
       const batchesData = completeBatches.map(batch => ({
         battery_type: batch.battery_type,
         battery_kg: parseFloat(batch.battery_kg),
-        quantity_received: parseFloat(batch.quantity_received) || 0,
-        has_output_image: batch.remelted_lead_images.length > 0
+        receivable_kg: parseFloat(calculateReceivable(batch.battery_kg, batch.battery_type))
       }));
       
       form.append('batches_data', JSON.stringify(batchesData));
-      form.append('entry_date', entryDate); // Send the selected date
+      form.append('entry_date', entryDate);
       
       completeBatches.forEach(batch => {
-        // Send first image for backward compatibility
         if (batch.battery_images[0]) form.append('files', batch.battery_images[0]);
-        if (batch.remelted_lead_images.length > 0) {
-          form.append('files', batch.remelted_lead_images[0]);
-        }
       });
 
       const token = localStorage.getItem('token');
@@ -170,31 +145,10 @@ export default function RecyclingPage({ user }) {
     }
   };
 
-  const canProceed = (batchIndex) => {
-    const batch = batches[batchIndex];
-    if (step === 1) {
-      return batch.battery_kg && batch.battery_images.length > 0;
-    } else if (step === 2) {
-      return batch.quantity_received && batch.remelted_lead_images.length > 0;
-    }
-    return false;
+  const canSubmit = () => {
+    return batches.some(batch => batch.battery_kg && batch.battery_images.length > 0);
   };
 
-  const anyBatchCanProceed = () => {
-    return batches.some((_, index) => canProceed(index));
-  };
-
-  const getStep1CompleteCount = () => {
-    return batches.filter(batch => batch.battery_kg && batch.battery_images.length > 0).length;
-  };
-
-  const getCompleteCount = () => {
-    return batches.filter(batch => 
-      batch.battery_kg && batch.battery_images.length > 0
-    ).length;
-  };
-
-  // Render multiple image upload
   const renderMultiImageUpload = (batchIndex, field, label) => {
     const images = imagePreviews[batchIndex]?.[field] || [];
     
@@ -204,7 +158,6 @@ export default function RecyclingPage({ user }) {
           {label}
         </Label>
         
-        {/* Existing images */}
         {images.length > 0 && (
           <div className="grid grid-cols-3 gap-2 mb-3">
             {images.map((img, imgIdx) => (
@@ -221,11 +174,9 @@ export default function RecyclingPage({ user }) {
           </div>
         )}
         
-        {/* Add more images */}
         <label
           htmlFor={`${field}-${batchIndex}`}
           className="border-4 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-green-50 hover:border-green-300 transition-colors cursor-pointer h-32 flex flex-col items-center justify-center gap-2"
-          data-testid={`${field}-upload-zone-${batchIndex}`}
         >
           <div className="flex items-center gap-2">
             <Camera className="w-8 h-8 text-slate-400" />
@@ -239,7 +190,6 @@ export default function RecyclingPage({ user }) {
         
         <input
           id={`${field}-${batchIndex}`}
-          data-testid={`${field}-input-${batchIndex}`}
           type="file"
           accept="image/*"
           capture="environment"
@@ -257,28 +207,25 @@ export default function RecyclingPage({ user }) {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Button
               onClick={() => navigate('/')}
-              data-testid="back-button"
               className="h-12 px-4 bg-white text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 rounded-lg"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900" data-testid="recycling-title">Battery Recycling</h1>
-              <p className="text-base text-slate-600">{batches.length} batch(es) | Step {step}/2</p>
+              <h1 className="text-2xl font-bold text-slate-900">Battery Recycling</h1>
+              <p className="text-base text-slate-600">{batches.length} batch(es)</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Date Picker Card */}
+        {/* Date Picker */}
         <Card className="bg-green-50 border-green-200 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2">
@@ -290,35 +237,18 @@ export default function RecyclingPage({ user }) {
               value={entryDate}
               onChange={(e) => setEntryDate(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
-              className="h-12 text-lg px-4 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-400 bg-white"
-              data-testid="entry-date-input"
+              className="h-12 text-lg px-4 border-2 border-green-200 rounded-lg bg-white"
             />
-            <p className="text-sm text-green-600">Select date for this entry (can be past date)</p>
           </div>
         </Card>
-
-        {/* Step Indicator */}
-        <div className="flex justify-center gap-4 mb-8">
-          {[1, 2].map((s) => (
-            <div
-              key={s}
-              className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${
-                step === s ? 'bg-green-600 text-white' : step > s ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500'
-              }`}
-              data-testid={`step-indicator-${s}`}
-            >
-              {s}
-            </div>
-          ))}
-        </div>
 
         {/* Info Card */}
         <Card className="bg-blue-50 border-blue-200 rounded-xl p-4 mb-6">
           <div className="flex gap-3">
             <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
             <div>
-              <p className="text-base font-semibold text-blue-900">Auto-Calculation</p>
-              <p className="text-sm text-blue-700">Expected output will be automatically calculated based on battery type</p>
+              <p className="text-base font-semibold text-blue-900">Lead Receivable Calculation</p>
+              <p className="text-sm text-blue-700">PP: 60.5% | MC/SMF: 57.5% | HR: 50%</p>
             </div>
           </div>
         </Card>
@@ -331,7 +261,6 @@ export default function RecyclingPage({ user }) {
               {batches.length > 1 && (
                 <Button
                   onClick={() => removeBatch(batchIndex)}
-                  data-testid={`remove-batch-${batchIndex}`}
                   className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                 >
                   <X className="w-5 h-5" />
@@ -339,190 +268,75 @@ export default function RecyclingPage({ user }) {
               )}
             </div>
 
-            {step === 1 && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-slate-900" data-testid="step-title">Battery Input</h2>
-                
-                <div>
-                  <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Battery Type
-                  </Label>
-                  <Select
-                    value={batch.battery_type}
-                    onValueChange={(value) => handleInputChange(batchIndex, 'battery_type', value)}
-                  >
-                    <SelectTrigger 
-                      className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
-                      data-testid={`battery-type-trigger-${batchIndex}`}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent data-testid={`battery-type-content-${batchIndex}`}>
-                      <SelectItem value="PP" className="text-xl">PP Battery</SelectItem>
-                      <SelectItem value="MC/SMF" className="text-xl">MC/SMF Battery</SelectItem>
-                      <SelectItem value="HR" className="text-xl">HR Battery</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Battery Weight (KG)
-                  </Label>
-                  <Input
-                    data-testid={`battery-kg-input-${batchIndex}`}
-                    type="number"
-                    step="0.01"
-                    value={batch.battery_kg}
-                    onChange={(e) => handleInputChange(batchIndex, 'battery_kg', e.target.value)}
-                    className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {renderMultiImageUpload(batchIndex, 'battery_images', 'Photos of Battery Weight')}
-
-                {/* Auto-calculated output */}
-                {batch.battery_kg && (
-                  <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                    <Label className="block text-sm font-bold text-green-700 uppercase tracking-wider mb-2">
-                      Expected Remelted Lead Output
-                    </Label>
-                    <p className="text-4xl font-bold text-green-700" data-testid={`output-display-${batchIndex}`}>
-                      {calculateOutput(batch.battery_kg, batch.battery_type)} kg
-                    </p>
-                  </div>
-                )}
+            <div className="space-y-6">
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Battery Type
+                </Label>
+                <Select
+                  value={batch.battery_type}
+                  onValueChange={(value) => handleInputChange(batchIndex, 'battery_type', value)}
+                >
+                  <SelectTrigger className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PP" className="text-xl">PP Battery</SelectItem>
+                    <SelectItem value="MC/SMF" className="text-xl">MC/SMF Battery</SelectItem>
+                    <SelectItem value="HR" className="text-xl">HR Battery</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            {step === 2 && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-slate-900" data-testid="step-title">Recycling Output</h2>
-                
-                <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="block text-sm font-bold text-slate-500 uppercase mb-1">Battery Type</Label>
-                      <p className="text-xl font-bold text-slate-900">{batch.battery_type}</p>
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-bold text-slate-500 uppercase mb-1">Input Weight</Label>
-                      <p className="text-xl font-bold text-slate-900">{batch.battery_kg} kg</p>
-                    </div>
-                    <div className="col-span-2">
-                      <Label className="block text-sm font-bold text-green-600 uppercase mb-1">Expected Output</Label>
-                      <p className="text-3xl font-bold text-green-600">{calculateOutput(batch.battery_kg, batch.battery_type)} kg</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Remelted Lead Received (KG)
-                  </Label>
-                  <Input
-                    data-testid={`quantity-received-input-${batchIndex}`}
-                    type="number"
-                    step="0.01"
-                    value={batch.quantity_received}
-                    onChange={(e) => handleInputChange(batchIndex, 'quantity_received', e.target.value)}
-                    className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500"
-                    placeholder="0.00"
-                  />
-                  <p className="text-sm text-slate-500 mt-2">Enter actual remelted lead quantity received from recycling process</p>
-                </div>
-
-                {user.name === 'TT' && batch.battery_kg && batch.quantity_received && (
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Label className="block text-sm font-bold text-blue-700 uppercase tracking-wider">
-                          Scrap Battery Receivable
-                        </Label>
-                        <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">TT ONLY</span>
-                      </div>
-                      <p className="text-3xl font-bold text-blue-700" data-testid={`receivable-display-${batchIndex}`}>
-                        {calculateReceivable(batch.battery_kg, batch.battery_type, batch.quantity_received)} kg
-                      </p>
-                    </div>
-
-                    <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Label className="block text-sm font-bold text-purple-700 uppercase tracking-wider">
-                          Recovery Percentage
-                        </Label>
-                        <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded">TT ONLY</span>
-                      </div>
-                      <p className="text-3xl font-bold text-purple-700" data-testid={`recovery-percent-display-${batchIndex}`}>
-                        {calculateRecoveryPercent(batch.battery_kg, batch.quantity_received)}%
-                      </p>
-                      <p className="text-sm text-purple-600 mt-2">Recovery from {batch.battery_type} Battery</p>
-                    </div>
-                  </div>
-                )}
-
-                {renderMultiImageUpload(batchIndex, 'remelted_lead_images', 'Photos of Remelted Lead Output')}
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Battery Weight (KG)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={batch.battery_kg}
+                  onChange={(e) => handleInputChange(batchIndex, 'battery_kg', e.target.value)}
+                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
+                  placeholder="0.00"
+                />
               </div>
-            )}
+
+              {renderMultiImageUpload(batchIndex, 'battery_images', 'Photos of Battery Weight')}
+
+              {/* Auto-calculated receivable */}
+              {batch.battery_kg && (
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                  <Label className="block text-sm font-bold text-green-700 uppercase tracking-wider mb-2">
+                    Lead Receivable from Recycling
+                  </Label>
+                  <p className="text-4xl font-bold text-green-700">
+                    {calculateReceivable(batch.battery_kg, batch.battery_type)} kg
+                  </p>
+                </div>
+              )}
+            </div>
           </Card>
         ))}
 
-        {/* Navigation Buttons */}
+        {/* Action Buttons */}
         <div className="flex gap-4">
-          {step > 1 && (
-            <Button
-              onClick={() => setStep(step - 1)}
-              data-testid="back-step-button"
-              className="flex-1 h-16 text-xl font-bold bg-white text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 rounded-lg"
-            >
-              Back
-            </Button>
-          )}
-          {step < 2 ? (
-            <>
-              <Button
-                onClick={handleSubmit}
-                data-testid="save-inputs-button"
-                disabled={!anyBatchCanProceed() || loading}
-                className="flex-1 h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg"
-              >
-                {loading ? 'Saving...' : `Save ${getStep1CompleteCount()} Input(s)`}
-              </Button>
-              <Button
-                onClick={addBatch}
-                data-testid="add-batch-button"
-                className="flex-1 h-16 text-xl font-bold bg-slate-600 hover:bg-slate-700 text-white shadow-lg rounded-lg"
-              >
-                <Plus className="w-6 h-6 mr-2" />
-                Add Battery
-              </Button>
-              <Button
-                onClick={() => setStep(step + 1)}
-                data-testid="next-step-button"
-                disabled={!anyBatchCanProceed()}
-                className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next Step ({getStep1CompleteCount()})
-              </Button>
-            </>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              data-testid="submit-entry-button"
-              disabled={!anyBatchCanProceed() || loading}
-              className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl rounded-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Saving...' : `Save ${getCompleteCount()} Batch(es)`}
-            </Button>
-          )}
+          <Button
+            onClick={addBatch}
+            className="flex-1 h-16 text-xl font-bold bg-slate-600 hover:bg-slate-700 text-white shadow-lg rounded-lg"
+          >
+            <Plus className="w-6 h-6 mr-2" />
+            Add Battery
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit() || loading}
+            className="flex-1 h-16 text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg rounded-lg disabled:opacity-50"
+          >
+            {loading ? 'Saving...' : `Save ${batches.filter(b => b.battery_kg && b.battery_images.length > 0).length} Batch(es)`}
+            <Check className="w-6 h-6 ml-2" />
+          </Button>
         </div>
-        
-        {step === 1 && anyBatchCanProceed() && (
-          <div className="text-center text-sm text-slate-600 mt-2">
-            💡 Save battery inputs now. Output details can be added later.
-          </div>
-        )}
       </div>
     </div>
   );
