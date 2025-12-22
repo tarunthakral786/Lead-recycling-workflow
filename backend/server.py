@@ -758,6 +758,17 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Calculate SANTOSH usage (deduct from receivable)
+    santosh_usage = sum(
+        batch.get('lead_ingot_kg', 0)
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+        if batch.get('input_source') == 'SANTOSH'
+    )
+    
+    # Adjust receivable by deducting SANTOSH usage
+    total_receivable = max(0, total_receivable - santosh_usage)
+    
     # RML Purchases
     rml_purchases = await db.rml_purchases.find({}, {"_id": 0}).to_list(10000)
     total_rml_purchased = sum(
