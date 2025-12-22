@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, ArrowLeft, Plus, X, Check, ChevronRight, Image } from 'lucide-react';
+import { Camera, ArrowLeft, Plus, X, Check, ChevronRight, Image, Calendar } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -18,6 +18,9 @@ export default function RefiningPage({ user }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  
+  // Entry date for past-dated entries
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Each batch tracks its own saved state per step
   const [batches, setBatches] = useState([{
