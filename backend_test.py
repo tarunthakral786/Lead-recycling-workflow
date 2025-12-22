@@ -732,6 +732,7 @@ class LeadTrackAPITester:
         if self.admin_token:
             self.test_admin_get_users()
             self.test_admin_add_user()
+            self.test_admin_change_password()  # Test change password before deleting user
             self.test_admin_delete_user()
             self.test_recovery_settings_get()
             self.test_recovery_settings_update()
@@ -744,6 +745,8 @@ class LeadTrackAPITester:
             self.test_stock_reduction_after_sale()
             self.test_get_sales_list()
             self.test_get_entries()
+            self.test_dross_recycling_entries()  # Test dross recycling
+            self.test_dross_recoveries_endpoint()  # Test dross recoveries endpoint
         
         # Security tests
         self.test_unauthorized_access()
