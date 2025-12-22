@@ -250,15 +250,24 @@ export default function ControlPanelPage({ user }) {
                         <p className="text-lg sm:text-xl font-bold text-slate-900">{u.name}</p>
                         <p className="text-sm sm:text-base text-slate-600 break-all">{u.email}</p>
                       </div>
-                      {u.name !== 'TT' && u.name !== 'Factory' && (
+                      <div className="flex gap-2">
                         <Button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                          onClick={() => handleChangePassword(u)}
+                          className="flex-1 sm:flex-initial h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                         >
-                          <Trash2 className="w-4 h-4 mr-2 sm:mr-0" />
-                          <span className="sm:hidden">Delete User</span>
+                          <Key className="w-4 h-4 mr-2 sm:mr-0" />
+                          <span className="sm:hidden">Change Password</span>
                         </Button>
-                      )}
+                        {u.name !== 'TT' && u.name !== 'Factory' && (
+                          <Button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="flex-1 sm:flex-initial h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2 sm:mr-0" />
+                            <span className="sm:hidden">Delete</span>
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 ))}
