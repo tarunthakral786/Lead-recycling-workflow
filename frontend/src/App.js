@@ -7,6 +7,7 @@ import RefiningPage from "@/pages/RefiningPage";
 import RecyclingPage from "@/pages/RecyclingPage";
 import DrossRecyclingPage from "@/pages/DrossRecyclingPage";
 import DrossRecyclingEntryPage from "@/pages/DrossRecyclingEntryPage";
+import RMLPurchasesPage from "@/pages/RMLPurchasesPage";
 import ControlPanelPage from "@/pages/ControlPanelPage";
 import HistoryPage from "@/pages/HistoryPage";
 import SalesPage from "@/pages/SalesPage";
