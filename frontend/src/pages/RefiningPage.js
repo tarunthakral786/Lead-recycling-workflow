@@ -356,6 +356,25 @@ export default function RefiningPage({ user }) {
 
       {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Date Picker Card */}
+        <Card className="bg-orange-50 border-orange-200 rounded-xl p-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-orange-600" />
+              <Label className="text-sm font-bold text-orange-700 uppercase">Entry Date</Label>
+            </div>
+            <Input
+              type="date"
+              value={entryDate}
+              onChange={(e) => setEntryDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="h-12 text-lg px-4 border-2 border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-400 bg-white"
+              data-testid="entry-date-input"
+            />
+            <p className="text-sm text-orange-600">Select date for this entry (can be past date)</p>
+          </div>
+        </Card>
+
         {/* Step Indicator */}
         <div className="flex justify-center gap-4 mb-6">
           {[1, 2, 3].map((s) => (
