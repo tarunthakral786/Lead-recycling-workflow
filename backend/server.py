@@ -346,6 +346,7 @@ async def delete_entry(entry_id: str, admin: dict = Depends(require_admin)):
 async def create_recycling_entry(
     batches_data: str = Form(...),
     files: List[UploadFile] = File(...),
+    entry_date: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
     import json
