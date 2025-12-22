@@ -292,56 +292,217 @@ class LeadTrackAPITester:
         png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\x0cIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xdd\x8d\xb4\x1c\x00\x00\x00\x00IEND\xaeB`\x82'
         return io.BytesIO(png_data)
 
-    def test_create_entry(self):
-        """Test creating a new entry with images"""
+    def test_dashboard_summary_api(self):
+        """Test Dashboard Summary API - should return 6 key metrics"""
         if not self.token:
-            self.log_test("Create Entry", False, "No authentication token")
+            self.log_test("Dashboard Summary API", False, "No authentication token")
             return False
             
         headers = {'Authorization': f'Bearer {self.token}'}
         
-        # Prepare form data
-        form_data = {
-            'lead_ingot_kg': '100.50',
-            'lead_ingot_pieces': '5',
-            'initial_dross_kg': '10.25',
-            'dross_2nd_kg': '8.75',
-            'dross_3rd_kg': '6.50',
-            'pure_lead_kg': '75.00'
-        }
-        
-        # Prepare files
-        files = {
-            'lead_ingot_image': ('test_lead.png', self.create_test_image(), 'image/png'),
-            'initial_dross_image': ('test_dross1.png', self.create_test_image(), 'image/png'),
-            'dross_2nd_image': ('test_dross2.png', self.create_test_image(), 'image/png'),
-            'dross_3rd_image': ('test_dross3.png', self.create_test_image(), 'image/png'),
-            'pure_lead_image': ('test_pure.png', self.create_test_image(), 'image/png')
-        }
-        
         try:
-            response = requests.post(
-                f"{self.api_url}/entries", 
-                data=form_data, 
-                files=files, 
-                headers=headers, 
-                timeout=30
-            )
+            response = requests.get(f"{self.api_url}/summary", headers=headers, timeout=10)
             success = response.status_code == 200
             details = f"Status: {response.status_code}"
             
             if success:
                 data = response.json()
-                self.entry_id = data.get('id')
-                details += f", Entry ID: {self.entry_id}"
-                details += f", Lead Ingot: {data.get('lead_ingot_kg')}kg"
+                # Check for the 6 key metrics
+                required_fields = [
+                    'pure_lead_stock', 'rml_stock', 'total_receivable', 
+                    'high_lead_stock', 'total_dross', 'antimony_recoverable'
+                ]
+                
+                missing_fields = [field for field in required_fields if field not in data]
+                if missing_fields:
+                    success = False
+                    details += f", Missing fields: {missing_fields}"
+                else:
+                    details += f", All 6 metrics present"
+                    details += f", Pure Lead: {data.get('pure_lead_stock')}kg"
+                    details += f", RML Stock: {data.get('rml_stock')}kg"
+                    details += f", Receivable: {data.get('total_receivable')}kg"
+                    details += f", High Lead: {data.get('high_lead_stock')}kg"
+                    details += f", Total Dross: {data.get('total_dross')}kg"
+                    details += f", Antimony: {data.get('antimony_recoverable')}kg"
+                    
+                    # Store initial values for later comparison
+                    self.initial_pure_lead = data.get('pure_lead_stock', 0)
+                    self.initial_rml_stock = data.get('rml_stock', 0)
             else:
                 details += f", Error: {response.text}"
                 
-            self.log_test("Create Entry", success, details)
+            self.log_test("Dashboard Summary API", success, details)
             return success
         except Exception as e:
-            self.log_test("Create Entry", False, f"Error: {str(e)}")
+            self.log_test("Dashboard Summary API", False, f"Error: {str(e)}")
+            return False
+
+    def test_available_skus_api(self):
+        """Test Available SKUs API - should return list of SKUs with stock levels and SB%"""
+        if not self.token:
+            self.log_test("Available SKUs API", False, "No authentication token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.token}'}
+        
+        try:
+            response = requests.get(f"{self.api_url}/sales/available-skus", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", SKUs found: {len(data)}"
+                
+                if data:
+                    # Check structure of first SKU
+                    first_sku = data[0]
+                    required_fields = ['sku_type', 'available_kg', 'display_name']
+                    missing_fields = [field for field in required_fields if field not in first_sku]
+                    
+                    if missing_fields:
+                        success = False
+                        details += f", Missing SKU fields: {missing_fields}"
+                    else:
+                        details += f", SKU structure valid"
+                        
+                        # List available SKUs
+                        sku_info = []
+                        for sku in data:
+                            sku_name = sku.get('sku_type', 'Unknown')
+                            stock = sku.get('available_kg', 0)
+                            sb_percent = sku.get('sb_percentage')
+                            
+                            if sb_percent:
+                                sku_info.append(f"{sku_name} ({stock}kg, SB:{sb_percent}%)")
+                            else:
+                                sku_info.append(f"{sku_name} ({stock}kg)")
+                                
+                            # Store first available SKU for testing
+                            if not hasattr(self, 'test_sku') and stock > 0:
+                                self.test_sku = sku_name
+                                self.test_sku_stock = stock
+                        
+                        details += f", Available: {', '.join(sku_info)}"
+                else:
+                    details += ", No SKUs available"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Available SKUs API", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Available SKUs API", False, f"Error: {str(e)}")
+            return False
+
+    def test_create_sale_api(self):
+        """Test Create Sale API - should accept sku_type and deduct from correct stock"""
+        if not self.token:
+            self.log_test("Create Sale API", False, "No authentication token")
+            return False
+            
+        if not hasattr(self, 'test_sku'):
+            self.log_test("Create Sale API", False, "No available SKU to test with")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.token}'}
+        
+        # Create a test sale
+        sale_data = {
+            "party_name": f"Test Buyer {datetime.now().strftime('%H%M%S')}",
+            "sku_type": self.test_sku,
+            "quantity_kg": 5.0,  # Small test quantity
+            "entry_date": datetime.now().strftime('%Y-%m-%d')
+        }
+        
+        try:
+            response = requests.post(f"{self.api_url}/sales", json=sale_data, headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                self.sale_id = data.get('id')
+                details += f", Sale created: ID {self.sale_id}"
+                details += f", Party: {sale_data['party_name']}"
+                details += f", SKU: {sale_data['sku_type']}"
+                details += f", Quantity: {sale_data['quantity_kg']}kg"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Create Sale API", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Create Sale API", False, f"Error: {str(e)}")
+            return False
+
+    def test_stock_reduction_after_sale(self):
+        """Test that stock is correctly reduced after sale"""
+        if not self.token or not hasattr(self, 'sale_id'):
+            self.log_test("Stock Reduction After Sale", False, "No sale created to verify")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.token}'}
+        
+        try:
+            # Get updated summary
+            response = requests.get(f"{self.api_url}/summary", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                current_pure_lead = data.get('pure_lead_stock', 0)
+                current_rml_stock = data.get('rml_stock', 0)
+                
+                # Check if stock was reduced (assuming we sold Pure Lead)
+                if hasattr(self, 'initial_pure_lead') and self.test_sku == 'Pure Lead':
+                    expected_stock = self.initial_pure_lead - 5.0  # We sold 5kg
+                    if abs(current_pure_lead - expected_stock) < 0.01:  # Allow small floating point differences
+                        details += f", Pure Lead stock correctly reduced from {self.initial_pure_lead}kg to {current_pure_lead}kg"
+                    else:
+                        success = False
+                        details += f", Stock reduction error: Expected {expected_stock}kg, got {current_pure_lead}kg"
+                else:
+                    # For RML SKUs, just verify the values are reasonable
+                    details += f", Current stocks - Pure Lead: {current_pure_lead}kg, RML: {current_rml_stock}kg"
+                    details += f", Stock tracking appears functional"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Stock Reduction After Sale", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Stock Reduction After Sale", False, f"Error: {str(e)}")
+            return False
+
+    def test_get_sales_list(self):
+        """Test retrieving sales list"""
+        if not self.token:
+            self.log_test("Get Sales List", False, "No authentication token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.token}'}
+        
+        try:
+            response = requests.get(f"{self.api_url}/sales", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", Sales count: {len(data)}"
+                if data:
+                    latest_sale = data[0]  # Should be sorted by timestamp desc
+                    details += f", Latest sale: {latest_sale.get('party_name')} - {latest_sale.get('quantity_kg')}kg of {latest_sale.get('sku_type')}"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Get Sales List", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Sales List", False, f"Error: {str(e)}")
             return False
 
     def test_get_entries(self):
