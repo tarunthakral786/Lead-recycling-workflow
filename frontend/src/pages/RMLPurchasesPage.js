@@ -222,8 +222,6 @@ export default function RMLPurchasesPage({ user }) {
     const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
     return `${remarks}, ${sb}%, ${formattedDate}`;
   };
-    return 'RML-SB-HIGH';
-  };
 
   return (
     <div className="min-h-screen bg-slate-100">
