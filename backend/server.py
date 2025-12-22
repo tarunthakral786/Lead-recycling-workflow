@@ -257,7 +257,8 @@ async def update_recovery_settings(settings: RecoverySettings, admin: dict = Dep
         {"type": "recovery_settings"},
         {"$set": {
             "pp_battery_percent": settings.pp_battery_percent,
-            "mc_smf_battery_percent": settings.mc_smf_battery_percent
+            "mc_smf_battery_percent": settings.mc_smf_battery_percent,
+            "hr_battery_percent": settings.hr_battery_percent
         }},
         upsert=True
     )
