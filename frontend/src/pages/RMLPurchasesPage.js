@@ -351,8 +351,11 @@ export default function RMLPurchasesPage({ user }) {
                   value={batch.remarks}
                   onChange={(e) => handleInputChange(batchIndex, 'remarks', e.target.value)}
                   className="min-h-[80px] text-lg px-4 py-3 w-full border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
-                  placeholder="Enter any remarks about this purchase"
+                  placeholder="Enter seller name or remarks (required)"
                 />
+                {!batch.remarks && (
+                  <p className="text-sm text-red-500 mt-1">* Seller Name / Remark is required</p>
+                )}
               </div>
 
               {renderMultiImageUpload(batchIndex)}
