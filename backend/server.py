@@ -752,10 +752,19 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # RML Purchases
+    rml_purchases = await db.rml_purchases.find({}, {"_id": 0}).to_list(10000)
+    total_rml_purchased = sum(
+        batch.get('quantity_kg', 0)
+        for entry in rml_purchases
+        for batch in entry.get('batches', [])
+    )
+    
     sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
     total_sold = sum(sale['quantity_kg'] for sale in sales)
     
-    remelted_lead_in_stock = max(0, total_remelted_lead - total_sold)
+    # Remelted in stock = recycled remelted + purchased RML - sold
+    remelted_lead_in_stock = max(0, total_remelted_lead + total_rml_purchased - total_sold)
     available_stock = total_pure_lead + remelted_lead_in_stock + total_high_lead
     
     return SummaryStats(
@@ -766,7 +775,8 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         total_receivable=round(total_receivable, 2),
         remelted_lead_in_stock=round(remelted_lead_in_stock, 2),
         total_dross=round(total_dross, 2),
-        total_high_lead=round(total_high_lead, 2)
+        total_high_lead=round(total_high_lead, 2),
+        total_rml_purchased=round(total_rml_purchased, 2)
     )
 
 @api_router.get("/dross/export/excel")
