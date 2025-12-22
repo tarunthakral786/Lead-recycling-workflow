@@ -96,7 +96,8 @@ class TokenResponse(BaseModel):
 
 class RecoverySettings(BaseModel):
     pp_battery_percent: float = 60.5
-    mc_smf_battery_percent: float = 58.0
+    mc_smf_battery_percent: float = 57.5
+    hr_battery_percent: float = 50.0
 
 class RefiningBatch(BaseModel):
     lead_ingot_kg: float
