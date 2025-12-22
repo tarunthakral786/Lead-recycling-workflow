@@ -167,12 +167,16 @@ class SaleEntry(BaseModel):
     user_id: str
     user_name: str
     party_name: str
+    sku_type: str  # "Pure Lead", "High Lead", or RML SKU name
     quantity_kg: float
+    entry_date: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class SaleCreate(BaseModel):
     party_name: str
+    sku_type: str  # "Pure Lead", "High Lead", or RML SKU name
     quantity_kg: float
+    entry_date: Optional[str] = None
 
 class SummaryStats(BaseModel):
     total_pure_lead_manufactured: float
