@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { LogOut, Recycle, FlaskConical, History, TrendingUp, DollarSign, Settings, ShoppingCart } from 'lucide-react';
+import { LogOut, Recycle, FlaskConical, History, TrendingUp, DollarSign, Settings, ShoppingCart, Atom } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
