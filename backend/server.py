@@ -100,6 +100,8 @@ class RecoverySettings(BaseModel):
     hr_battery_percent: float = 50.0
 
 class RefiningBatch(BaseModel):
+    input_source: str = "manual"  # 'manual', 'SANTOSH', or RML SKU
+    sb_percentage: Optional[float] = None  # Required when input_source is SANTOSH
     lead_ingot_kg: float
     lead_ingot_pieces: int
     lead_ingot_image: str
