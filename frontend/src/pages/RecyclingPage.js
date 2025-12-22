@@ -101,7 +101,10 @@ export default function RecyclingPage({ user }) {
 
   const calculateOutput = (batteryKg, batteryType) => {
     if (!batteryKg) return 0;
-    const percentage = batteryType === 'PP' ? 0.605 : 0.58;
+    let percentage = 0.605; // PP default
+    if (batteryType === 'PP') percentage = 0.605;
+    else if (batteryType === 'MC/SMF') percentage = 0.575;
+    else if (batteryType === 'HR') percentage = 0.50;
     return (parseFloat(batteryKg) * percentage).toFixed(2);
   };
 
