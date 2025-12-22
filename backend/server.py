@@ -721,14 +721,115 @@ async def create_sale(sale_data: SaleCreate, current_user: dict = Depends(get_cu
         user_id=current_user["id"],
         user_name=current_user["name"],
         party_name=sale_data.party_name,
-        quantity_kg=sale_data.quantity_kg
+        sku_type=sale_data.sku_type,
+        quantity_kg=sale_data.quantity_kg,
+        entry_date=sale_data.entry_date
     )
     
     doc = sale.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    
+    # Handle custom entry date
+    if sale_data.entry_date:
+        from datetime import datetime as dt
+        custom_date = dt.fromisoformat(sale_data.entry_date + "T12:00:00")
+        doc['timestamp'] = custom_date.isoformat()
+    else:
+        doc['timestamp'] = doc['timestamp'].isoformat()
+    
     await db.sales.insert_one(doc)
     
     return sale
+
+@api_router.get("/sales/available-skus", response_model=List[AvailableSKU])
+async def get_available_skus(current_user: dict = Depends(get_current_user)):
+    """Get all available SKUs with their current stock for sales"""
+    available_skus = []
+    
+    # Get all refining entries for calculations
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
+    
+    # Get all sales
+    sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
+    
+    # Calculate Pure Lead stock
+    total_pure_lead = sum(
+        batch['pure_lead_kg']
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+    )
+    pure_lead_sold = sum(sale['quantity_kg'] for sale in sales if sale.get('sku_type') == 'Pure Lead')
+    pure_lead_stock = max(0, total_pure_lead - pure_lead_sold)
+    
+    if pure_lead_stock > 0:
+        available_skus.append(AvailableSKU(
+            sku_type="Pure Lead",
+            sb_percentage=None,
+            available_kg=round(pure_lead_stock, 2),
+            display_name="Pure Lead"
+        ))
+    
+    # Calculate High Lead stock
+    dross_recycling_entries = await db.dross_recycling_entries.find({}, {"_id": 0}).to_list(10000)
+    total_high_lead = sum(
+        batch['high_lead_recovered']
+        for entry in dross_recycling_entries
+        for batch in entry.get('batches', [])
+    )
+    high_lead_sold = sum(sale['quantity_kg'] for sale in sales if sale.get('sku_type') == 'High Lead')
+    high_lead_stock = max(0, total_high_lead - high_lead_sold)
+    
+    if high_lead_stock > 0:
+        available_skus.append(AvailableSKU(
+            sku_type="High Lead",
+            sb_percentage=None,
+            available_kg=round(high_lead_stock, 2),
+            display_name="High Lead"
+        ))
+    
+    # Calculate RML SKUs stock
+    rml_purchases = await db.rml_purchases.find({}, {"_id": 0}).to_list(10000)
+    
+    # Aggregate RML purchases by SKU
+    rml_skus = {}
+    for entry in rml_purchases:
+        for batch in entry.get('batches', []):
+            sku = batch.get('sku', '')
+            if sku:
+                if sku not in rml_skus:
+                    rml_skus[sku] = {
+                        'purchased_kg': 0,
+                        'sb_percentage': batch.get('sb_percentage', 0)
+                    }
+                rml_skus[sku]['purchased_kg'] += batch.get('quantity_kg', 0)
+    
+    # Deduct RML used in refining
+    for entry in refining_entries:
+        for batch in entry.get('batches', []):
+            input_source = batch.get('input_source', 'manual')
+            if input_source != 'manual' and input_source != 'SANTOSH':
+                # This is an RML SKU used in refining
+                if input_source in rml_skus:
+                    rml_skus[input_source]['purchased_kg'] -= batch.get('lead_ingot_kg', 0)
+    
+    # Deduct RML sold
+    for sale in sales:
+        sku_type = sale.get('sku_type', '')
+        if sku_type and sku_type not in ['Pure Lead', 'High Lead']:
+            if sku_type in rml_skus:
+                rml_skus[sku_type]['purchased_kg'] -= sale['quantity_kg']
+    
+    # Add RML SKUs with positive stock
+    for sku, data in rml_skus.items():
+        stock = max(0, data['purchased_kg'])
+        if stock > 0:
+            available_skus.append(AvailableSKU(
+                sku_type=sku,
+                sb_percentage=data['sb_percentage'],
+                available_kg=round(stock, 2),
+                display_name=f"{sku} (SB: {data['sb_percentage']}%)"
+            ))
+    
+    return available_skus
 
 @api_router.get("/sales")
 async def get_sales(current_user: dict = Depends(get_current_user)):
