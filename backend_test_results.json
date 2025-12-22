@@ -1,106 +1,124 @@
 {
   "summary": {
-    "total_tests": 16,
-    "passed_tests": 16,
+    "total_tests": 19,
+    "passed_tests": 19,
     "success_rate": "100.0%",
-    "timestamp": "2025-12-22T21:49:50.538949"
+    "timestamp": "2025-12-22T22:06:22.168391"
   },
   "detailed_results": [
     {
       "test": "API Root Endpoint",
       "success": true,
       "details": "Status: 200, Message: SPES PRO API",
-      "timestamp": "2025-12-22T21:49:49.131367"
+      "timestamp": "2025-12-22T22:06:20.393512"
     },
     {
       "test": "Users List for Login",
       "success": true,
       "details": "Status: 200, Users found: ['Factory', 'TT', 'Umesh Thakral'], Only expected users present",
-      "timestamp": "2025-12-22T21:49:49.166297"
+      "timestamp": "2025-12-22T22:06:20.438045"
     },
     {
       "test": "TT Admin Login",
       "success": true,
       "details": "Status: 200, Admin token received: Yes, User: TT",
-      "timestamp": "2025-12-22T21:49:49.444911"
+      "timestamp": "2025-12-22T22:06:20.710407"
     },
     {
       "test": "Factory User Login",
       "success": true,
       "details": "Status: 200, Factory token received: Yes, User: Factory",
-      "timestamp": "2025-12-22T21:49:49.723917"
+      "timestamp": "2025-12-22T22:06:20.988664"
     },
     {
       "test": "Admin Get Users",
       "success": true,
       "details": "Status: 200, Total users: 3, Users: ['Factory', 'TT', 'Umesh Thakral']",
-      "timestamp": "2025-12-22T21:49:49.757841"
+      "timestamp": "2025-12-22T22:06:21.037892"
     },
     {
       "test": "Admin Add User",
       "success": true,
-      "details": "Status: 200, User created: Test User 214949, ID: 96b2c249-4b62-4515-8f65-29ade7030c7f",
-      "timestamp": "2025-12-22T21:49:50.041947"
+      "details": "Status: 200, User created: Test User 220621, ID: e129b111-92ab-404d-8024-a6cb9c6a528b",
+      "timestamp": "2025-12-22T22:06:21.314712"
+    },
+    {
+      "test": "Admin Change Password",
+      "success": true,
+      "details": "Status: 200, Password changed: Password updated for Test User 220621",
+      "timestamp": "2025-12-22T22:06:21.590747"
     },
     {
       "test": "Admin Delete User",
       "success": true,
       "details": "Status: 200, User deleted successfully",
-      "timestamp": "2025-12-22T21:49:50.077518"
+      "timestamp": "2025-12-22T22:06:21.624630"
     },
     {
       "test": "Get Recovery Settings",
       "success": true,
-      "details": "Status: 200, PP: 60.5%, MC/SMF: 58.0%",
-      "timestamp": "2025-12-22T21:49:50.150040"
+      "details": "Status: 200, PP: 65.0%, MC/SMF: 62.0%",
+      "timestamp": "2025-12-22T22:06:21.663864"
     },
     {
       "test": "Update Recovery Settings",
       "success": true,
       "details": "Status: 200, Settings updated to PP: 65.0%, MC/SMF: 62.0%, Restored to original values",
-      "timestamp": "2025-12-22T21:49:50.226506"
+      "timestamp": "2025-12-22T22:06:21.737844"
     },
     {
       "test": "Dashboard Summary API",
       "success": true,
-      "details": "Status: 200, All 6 metrics present, Pure Lead: 265.0kg, RML Stock: 20.0kg, Receivable: 6010.5kg, High Lead: 0.0kg, Total Dross: 39.0kg, Antimony: 2.64kg",
-      "timestamp": "2025-12-22T21:49:50.266119"
+      "details": "Status: 200, All 6 metrics present, Pure Lead: 260.0kg, RML Stock: 20.0kg, Receivable: 6010.5kg, High Lead: 0.0kg, Total Dross: 39.0kg, Antimony: 2.64kg",
+      "timestamp": "2025-12-22T22:06:21.781239"
     },
     {
       "test": "Available SKUs API",
       "success": true,
-      "details": "Status: 200, SKUs found: 2, SKU structure valid, Available: Pure Lead (265.0kg), RML-SB-LOW-0.7% (20.0kg, SB:0.7%)",
-      "timestamp": "2025-12-22T21:49:50.302892"
+      "details": "Status: 200, SKUs found: 2, SKU structure valid, Available: Pure Lead (260.0kg), RML-SB-LOW-0.7% (20.0kg, SB:0.7%)",
+      "timestamp": "2025-12-22T22:06:21.817270"
     },
     {
       "test": "Create Sale API",
       "success": true,
-      "details": "Status: 200, Sale created: ID a37c22f8-93ec-45fd-8017-f20e20985357, Party: Test Buyer 214950, SKU: Pure Lead, Quantity: 5.0kg",
-      "timestamp": "2025-12-22T21:49:50.344419"
+      "details": "Status: 200, Sale created: ID f0ebaf37-e792-4b67-ae1f-f8230b552135, Party: Test Buyer 220621, SKU: Pure Lead, Quantity: 5.0kg",
+      "timestamp": "2025-12-22T22:06:21.858585"
     },
     {
       "test": "Stock Reduction After Sale",
       "success": true,
-      "details": "Status: 200, Pure Lead stock correctly reduced from 265.0kg to 260.0kg",
-      "timestamp": "2025-12-22T21:49:50.384579"
+      "details": "Status: 200, Pure Lead stock correctly reduced from 260.0kg to 255.0kg",
+      "timestamp": "2025-12-22T22:06:21.937679"
     },
     {
       "test": "Get Sales List",
       "success": true,
-      "details": "Status: 200, Sales count: 1, Latest sale: Test Buyer 214950 - 5.0kg of Pure Lead",
-      "timestamp": "2025-12-22T21:49:50.462472"
+      "details": "Status: 200, Sales count: 2, Latest sale: Test Buyer 214950 - 5.0kg of Pure Lead, SKU type field present: \u2713",
+      "timestamp": "2025-12-22T22:06:21.980462"
     },
     {
       "test": "Get Entries List",
       "success": true,
       "details": "Status: 200, Entries count: 4, First entry user: Factory",
-      "timestamp": "2025-12-22T21:49:50.502476"
+      "timestamp": "2025-12-22T22:06:22.023558"
+    },
+    {
+      "test": "Dross Recycling Entries",
+      "success": true,
+      "details": "Status: 200, Dross entries count: 0",
+      "timestamp": "2025-12-22T22:06:22.059482"
+    },
+    {
+      "test": "Dross Recoveries Endpoint",
+      "success": true,
+      "details": "Status: 200, Returns list with 0 items (expected empty for backward compatibility)",
+      "timestamp": "2025-12-22T22:06:22.094488"
     },
     {
       "test": "Unauthorized Access Check",
       "success": true,
       "details": "Status: 403 (Expected: 403), Correctly rejected unauthorized access",
-      "timestamp": "2025-12-22T21:49:50.537277"
+      "timestamp": "2025-12-22T22:06:22.167458"
     }
   ]
 }
