@@ -1,70 +1,106 @@
 {
   "summary": {
-    "total_tests": 10,
-    "passed_tests": 10,
+    "total_tests": 16,
+    "passed_tests": 16,
     "success_rate": "100.0%",
-    "timestamp": "2025-12-20T18:28:34.469315"
+    "timestamp": "2025-12-22T21:49:50.538949"
   },
   "detailed_results": [
     {
       "test": "API Root Endpoint",
       "success": true,
-      "details": "Status: 200, Message: LeadTrack Pro API",
-      "timestamp": "2025-12-20T18:28:33.542725"
+      "details": "Status: 200, Message: SPES PRO API",
+      "timestamp": "2025-12-22T21:49:49.131367"
     },
     {
-      "test": "User Registration",
+      "test": "Users List for Login",
       "success": true,
-      "details": "Status: 200, User ID: 09c7bb88-7e39-446a-8852-84e6c0ca975a",
-      "timestamp": "2025-12-20T18:28:33.859130"
+      "details": "Status: 200, Users found: ['Factory', 'TT', 'Umesh Thakral'], Only expected users present",
+      "timestamp": "2025-12-22T21:49:49.166297"
     },
     {
-      "test": "User Login",
+      "test": "TT Admin Login",
       "success": true,
-      "details": "Status: 200, Token received: Yes, User: Test User 182833",
-      "timestamp": "2025-12-20T18:28:34.157183"
+      "details": "Status: 200, Admin token received: Yes, User: TT",
+      "timestamp": "2025-12-22T21:49:49.444911"
     },
     {
-      "test": "Duplicate Registration Check",
+      "test": "Factory User Login",
       "success": true,
-      "details": "Status: 400 (Expected: 400), Correctly rejected duplicate email",
-      "timestamp": "2025-12-20T18:28:34.200202"
+      "details": "Status: 200, Factory token received: Yes, User: Factory",
+      "timestamp": "2025-12-22T21:49:49.723917"
     },
     {
-      "test": "Invalid Login Check",
+      "test": "Admin Get Users",
       "success": true,
-      "details": "Status: 401 (Expected: 401), Correctly rejected invalid credentials",
-      "timestamp": "2025-12-20T18:28:34.241022"
+      "details": "Status: 200, Total users: 3, Users: ['Factory', 'TT', 'Umesh Thakral']",
+      "timestamp": "2025-12-22T21:49:49.757841"
     },
     {
-      "test": "Create Entry",
+      "test": "Admin Add User",
       "success": true,
-      "details": "Status: 200, Entry ID: 25d63d73-184c-4964-bc51-aeec26d2068e, Lead Ingot: 100.5kg",
-      "timestamp": "2025-12-20T18:28:34.296973"
+      "details": "Status: 200, User created: Test User 214949, ID: 96b2c249-4b62-4515-8f65-29ade7030c7f",
+      "timestamp": "2025-12-22T21:49:50.041947"
+    },
+    {
+      "test": "Admin Delete User",
+      "success": true,
+      "details": "Status: 200, User deleted successfully",
+      "timestamp": "2025-12-22T21:49:50.077518"
+    },
+    {
+      "test": "Get Recovery Settings",
+      "success": true,
+      "details": "Status: 200, PP: 60.5%, MC/SMF: 58.0%",
+      "timestamp": "2025-12-22T21:49:50.150040"
+    },
+    {
+      "test": "Update Recovery Settings",
+      "success": true,
+      "details": "Status: 200, Settings updated to PP: 65.0%, MC/SMF: 62.0%, Restored to original values",
+      "timestamp": "2025-12-22T21:49:50.226506"
+    },
+    {
+      "test": "Dashboard Summary API",
+      "success": true,
+      "details": "Status: 200, All 6 metrics present, Pure Lead: 265.0kg, RML Stock: 20.0kg, Receivable: 6010.5kg, High Lead: 0.0kg, Total Dross: 39.0kg, Antimony: 2.64kg",
+      "timestamp": "2025-12-22T21:49:50.266119"
+    },
+    {
+      "test": "Available SKUs API",
+      "success": true,
+      "details": "Status: 200, SKUs found: 2, SKU structure valid, Available: Pure Lead (265.0kg), RML-SB-LOW-0.7% (20.0kg, SB:0.7%)",
+      "timestamp": "2025-12-22T21:49:50.302892"
+    },
+    {
+      "test": "Create Sale API",
+      "success": true,
+      "details": "Status: 200, Sale created: ID a37c22f8-93ec-45fd-8017-f20e20985357, Party: Test Buyer 214950, SKU: Pure Lead, Quantity: 5.0kg",
+      "timestamp": "2025-12-22T21:49:50.344419"
+    },
+    {
+      "test": "Stock Reduction After Sale",
+      "success": true,
+      "details": "Status: 200, Pure Lead stock correctly reduced from 265.0kg to 260.0kg",
+      "timestamp": "2025-12-22T21:49:50.384579"
+    },
+    {
+      "test": "Get Sales List",
+      "success": true,
+      "details": "Status: 200, Sales count: 1, Latest sale: Test Buyer 214950 - 5.0kg of Pure Lead",
+      "timestamp": "2025-12-22T21:49:50.462472"
     },
     {
       "test": "Get Entries List",
       "success": true,
-      "details": "Status: 200, Entries count: 1, First entry user: Test User 182833",
-      "timestamp": "2025-12-20T18:28:34.338815"
-    },
-    {
-      "test": "Get Entry Detail",
-      "success": true,
-      "details": "Status: 200, Entry ID: 25d63d73-184c-4964-bc51-aeec26d2068e, Has images: Yes",
-      "timestamp": "2025-12-20T18:28:34.379001"
-    },
-    {
-      "test": "Excel Export",
-      "success": true,
-      "details": "Status: 200, Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, File size: 5246 bytes, Valid Excel file",
-      "timestamp": "2025-12-20T18:28:34.431476"
+      "details": "Status: 200, Entries count: 4, First entry user: Factory",
+      "timestamp": "2025-12-22T21:49:50.502476"
     },
     {
       "test": "Unauthorized Access Check",
       "success": true,
       "details": "Status: 403 (Expected: 403), Correctly rejected unauthorized access",
-      "timestamp": "2025-12-20T18:28:34.468535"
+      "timestamp": "2025-12-22T21:49:50.537277"
     }
   ]
 }
