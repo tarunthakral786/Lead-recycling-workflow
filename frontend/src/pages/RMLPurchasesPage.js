@@ -212,12 +212,16 @@ export default function RMLPurchasesPage({ user }) {
     );
   };
 
-  // Generate SKU preview based on SB percentage
-  const getSKUPreview = (sb_percentage) => {
-    if (!sb_percentage) return '';
-    const sb = parseFloat(sb_percentage);
-    if (sb <= 1) return 'RML-SB-LOW';
-    if (sb <= 3) return 'RML-SB-MED';
+  // Generate SKU preview based on remarks, sb%, and date
+  const getSKUPreview = (batch) => {
+    if (!batch.sb_percentage) return '';
+    const remarks = batch.remarks || 'RML';
+    const sb = parseFloat(batch.sb_percentage);
+    // Format date as DD/MM/YYYY
+    const dateParts = entryDate.split('-');
+    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+    return `${remarks}, ${sb}%, ${formattedDate}`;
+  };
     return 'RML-SB-HIGH';
   };
 
