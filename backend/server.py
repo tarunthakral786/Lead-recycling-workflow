@@ -261,6 +261,27 @@ async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "User deleted successfully"}
 
+class ChangePasswordRequest(BaseModel):
+    new_password: str
+
+@api_router.put("/admin/users/{user_id}/password")
+async def change_user_password(user_id: str, data: ChangePasswordRequest, admin: dict = Depends(require_admin)):
+    """Allow TT admin to change any user's password"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_hash = hash_password(data.new_password)
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"hashed_password": new_hash}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to update password")
+    
+    return {"message": f"Password updated for {user['name']}"}
+
 # Admin - Recovery Settings
 @api_router.get("/admin/recovery-settings", response_model=RecoverySettings)
 async def get_recovery_settings(current_user: dict = Depends(get_current_user)):
