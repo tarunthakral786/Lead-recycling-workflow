@@ -449,6 +449,36 @@ export default function RefiningPage({ user }) {
             <div className="space-y-6">
               <h2 className="text-xl font-bold text-slate-900" data-testid="step-title">Lead Ingot Input</h2>
               
+              {/* RML SKU Selection */}
+              {rmlSkus.length > 0 && (
+                <Card className="bg-purple-50 border-purple-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="w-5 h-5 text-purple-600" />
+                    <Label className="text-sm font-bold text-purple-700 uppercase">Input Source</Label>
+                  </div>
+                  <Select
+                    value={batch.input_source}
+                    onValueChange={(value) => handleInputChange(currentBatchIndex, 'input_source', value)}
+                    disabled={isBatchStepSaved(currentBatchIndex)}
+                  >
+                    <SelectTrigger className="h-14 text-lg px-4 w-full border-2 border-purple-200 rounded-lg bg-white">
+                      <SelectValue placeholder="Select input source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual" className="text-lg">Manual Entry (New Lead Ingot)</SelectItem>
+                      {rmlSkus.map(sku => (
+                        <SelectItem key={sku.sku} value={sku.sku} className="text-lg">
+                          {sku.sku} - {sku.total_quantity_kg} kg available ({sku.total_pieces} pcs)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {batch.input_source !== 'manual' && (
+                    <p className="text-sm text-purple-600 mt-2">Using RML purchased stock as input</p>
+                  )}
+                </Card>
+              )}
+              
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Weight (KG)
