@@ -92,6 +92,33 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
+  const handleChangePassword = (user) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setShowChangePassword(true);
+  };
+
+  const handleSubmitPasswordChange = async () => {
+    if (!newPassword || newPassword.length < 4) {
+      toast.error('Password must be at least 4 characters');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/admin/users/${selectedUser.id}/password`, 
+        { new_password: newPassword },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      toast.success(`Password updated for ${selectedUser.name}`);
+      setShowChangePassword(false);
+      setSelectedUser(null);
+      setNewPassword('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change password');
+    }
+  };
+
   const handleDeleteEntry = async (entryId) => {
     if (!confirm('Are you sure you want to delete this entry?')) return;
 
