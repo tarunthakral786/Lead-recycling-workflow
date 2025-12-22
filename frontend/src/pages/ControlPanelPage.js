@@ -19,7 +19,7 @@ export default function ControlPanelPage({ user }) {
   const [entries, setEntries] = useState([]);
   const [drossEntries, setDrossEntries] = useState([]);
   const [sales, setSales] = useState([]);
-  const [settings, setSettings] = useState({ pp_battery_percent: 60.5, mc_smf_battery_percent: 58.0 });
+  const [settings, setSettings] = useState({ pp_battery_percent: 60.5, mc_smf_battery_percent: 57.5, hr_battery_percent: 50.0 });
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '' });
