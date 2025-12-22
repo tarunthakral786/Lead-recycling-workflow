@@ -232,6 +232,25 @@ export default function DrossRecyclingEntryPage({ user }) {
 
       {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Date Picker Card */}
+        <Card className="bg-yellow-50 border-yellow-200 rounded-xl p-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-yellow-600" />
+              <Label className="text-sm font-bold text-yellow-700 uppercase">Entry Date</Label>
+            </div>
+            <Input
+              type="date"
+              value={entryDate}
+              onChange={(e) => setEntryDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="h-12 text-lg px-4 border-2 border-yellow-200 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-yellow-400 bg-white"
+              data-testid="entry-date-input"
+            />
+            <p className="text-sm text-yellow-600">Select date for this entry (can be past date)</p>
+          </div>
+        </Card>
+
         {/* Batch Forms */}
         {batches.map((batch, batchIndex) => (
           <Card key={batchIndex} className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mb-6">
