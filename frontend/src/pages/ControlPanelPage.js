@@ -350,6 +350,19 @@ export default function ControlPanelPage({ user }) {
                     />
                   </div>
 
+                  <div>
+                    <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      HR Battery Recovery %
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={settings.hr_battery_percent}
+                      onChange={(e) => setSettings({ ...settings, hr_battery_percent: parseFloat(e.target.value) })}
+                      className="h-14 sm:h-16 text-xl sm:text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
+                    />
+                  </div>
+
                   <Button
                     onClick={handleUpdateSettings}
                     data-testid="save-settings-button"
