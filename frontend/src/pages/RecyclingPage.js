@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, ArrowLeft, Plus, X, Info } from 'lucide-react';
+import { Camera, ArrowLeft, Plus, X, Info, Calendar } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -17,6 +17,10 @@ export default function RecyclingPage({ user }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  
+  // Entry date for past-dated entries
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  
   const [batches, setBatches] = useState([{
     battery_type: 'PP',
     battery_kg: '',
