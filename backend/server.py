@@ -184,6 +184,7 @@ class SummaryStats(BaseModel):
     total_dross: float
     total_high_lead: float
     total_rml_purchased: float = 0
+    antimony_recoverable: float = 0  # SB% x Quantity for each refining batch
 
 # RML Purchase Models
 class RMLPurchaseBatch(BaseModel):
