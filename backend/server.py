@@ -851,13 +851,17 @@ async def delete_sale(sale_id: str, admin: dict = Depends(require_admin)):
 # Summary
 @api_router.get("/summary", response_model=SummaryStats)
 async def get_summary(current_user: dict = Depends(get_current_user)):
+    # Get all refining entries
     refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
-    total_pure_lead = sum(
+    
+    # Calculate total pure lead produced from refining
+    total_pure_lead_manufactured = sum(
         batch['pure_lead_kg']
         for entry in refining_entries
         for batch in entry.get('batches', [])
     )
     
+    # Calculate total dross from refining
     total_dross = sum(
         batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
         for entry in refining_entries
@@ -873,6 +877,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         if batch.get('sb_percentage')  # Only count batches with SB% entered
     )
     
+    # Get dross recycling entries for High Lead
     dross_recycling_entries = await db.dross_recycling_entries.find({}, {"_id": 0}).to_list(10000)
     total_high_lead = sum(
         batch['high_lead_recovered']
@@ -880,6 +885,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Get recycling entries for receivable
     recycling_entries = await db.entries.find({"entry_type": "recycling"}, {"_id": 0}).to_list(10000)
     total_remelted_lead = sum(
         batch.get('quantity_received', 0)
@@ -887,7 +893,8 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
-    total_receivable = sum(
+    # Calculate lead receivable from recycling
+    raw_receivable = sum(
         batch.get('receivable_kg', 0)
         for entry in recycling_entries
         for batch in entry.get('batches', [])
@@ -902,7 +909,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     )
     
     # Adjust receivable by deducting SANTOSH usage
-    total_receivable = max(0, total_receivable - santosh_usage)
+    total_receivable = max(0, raw_receivable - santosh_usage)
     
     # RML Purchases
     rml_purchases = await db.rml_purchases.find({}, {"_id": 0}).to_list(10000)
@@ -912,24 +919,48 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Calculate RML used in refining (non-manual, non-SANTOSH input sources)
+    rml_used_in_refining = sum(
+        batch.get('lead_ingot_kg', 0)
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+        if batch.get('input_source') not in ['manual', 'SANTOSH', None, '']
+    )
+    
+    # Get all sales
     sales = await db.sales.find({}, {"_id": 0}).to_list(10000)
     total_sold = sum(sale['quantity_kg'] for sale in sales)
     
-    # Remelted in stock = recycled remelted + purchased RML - sold
+    # Calculate SKU-specific sales
+    pure_lead_sold = sum(sale['quantity_kg'] for sale in sales if sale.get('sku_type') == 'Pure Lead')
+    high_lead_sold = sum(sale['quantity_kg'] for sale in sales if sale.get('sku_type') == 'High Lead')
+    rml_sold = sum(sale['quantity_kg'] for sale in sales if sale.get('sku_type') not in ['Pure Lead', 'High Lead', None, ''])
+    
+    # Calculate final stocks
+    pure_lead_stock = max(0, total_pure_lead_manufactured - pure_lead_sold)
+    rml_stock = max(0, total_rml_purchased - rml_used_in_refining - rml_sold)
+    high_lead_stock = max(0, total_high_lead - high_lead_sold)
+    
+    # Legacy calculations for backward compatibility
     remelted_lead_in_stock = max(0, total_remelted_lead + total_rml_purchased - total_sold)
-    available_stock = total_pure_lead + remelted_lead_in_stock + total_high_lead
+    available_stock = pure_lead_stock + rml_stock + high_lead_stock
     
     return SummaryStats(
-        total_pure_lead_manufactured=round(total_pure_lead, 2),
+        # New simplified dashboard stats
+        pure_lead_stock=round(pure_lead_stock, 2),
+        rml_stock=round(rml_stock, 2),
+        total_receivable=round(total_receivable, 2),
+        high_lead_stock=round(high_lead_stock, 2),
+        total_dross=round(total_dross, 2),
+        antimony_recoverable=round(antimony_recoverable, 2),
+        # Legacy fields
+        total_pure_lead_manufactured=round(total_pure_lead_manufactured, 2),
         total_remelted_lead=round(total_remelted_lead, 2),
         total_sold=round(total_sold, 2),
         available_stock=round(available_stock, 2),
-        total_receivable=round(total_receivable, 2),
         remelted_lead_in_stock=round(remelted_lead_in_stock, 2),
-        total_dross=round(total_dross, 2),
         total_high_lead=round(total_high_lead, 2),
-        total_rml_purchased=round(total_rml_purchased, 2),
-        antimony_recoverable=round(antimony_recoverable, 2)
+        total_rml_purchased=round(total_rml_purchased, 2)
     )
 
 @api_router.get("/dross/export/excel")
