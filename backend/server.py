@@ -179,16 +179,27 @@ class SaleCreate(BaseModel):
     entry_date: Optional[str] = None
 
 class SummaryStats(BaseModel):
-    total_pure_lead_manufactured: float
-    total_remelted_lead: float
-    total_sold: float
-    available_stock: float
-    total_receivable: float
-    remelted_lead_in_stock: float
-    total_dross: float
-    total_high_lead: float
-    total_rml_purchased: float = 0
+    # New simplified dashboard stats
+    pure_lead_stock: float = 0  # Pure Lead produced - Pure Lead sold
+    rml_stock: float = 0  # RML purchased - RML used in refining - RML sold
+    total_receivable: float = 0  # Recycling receivable - SANTOSH usage
+    high_lead_stock: float = 0  # High Lead recovered - High Lead sold
+    total_dross: float = 0  # Sum of all dross from refining
     antimony_recoverable: float = 0  # SB% x Quantity for each refining batch
+    # Legacy fields for backward compatibility
+    total_pure_lead_manufactured: float = 0
+    total_remelted_lead: float = 0
+    total_sold: float = 0
+    available_stock: float = 0
+    remelted_lead_in_stock: float = 0
+    total_high_lead: float = 0
+    total_rml_purchased: float = 0
+
+class AvailableSKU(BaseModel):
+    sku_type: str  # "Pure Lead", "High Lead", or RML SKU name
+    sb_percentage: Optional[float] = None
+    available_kg: float
+    display_name: str
 
 # RML Purchase Models
 class RMLPurchaseBatch(BaseModel):
