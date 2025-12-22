@@ -748,6 +748,15 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
+    # Calculate Antimony Recoverable from Drosses
+    # Formula: SB% x Quantity / 100 for each batch (to get actual antimony weight)
+    antimony_recoverable = sum(
+        (batch.get('sb_percentage', 0) or 0) * batch.get('lead_ingot_kg', 0) / 100
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+        if batch.get('sb_percentage')  # Only count batches with SB% entered
+    )
+    
     dross_recycling_entries = await db.dross_recycling_entries.find({}, {"_id": 0}).to_list(10000)
     total_high_lead = sum(
         batch['high_lead_recovered']
