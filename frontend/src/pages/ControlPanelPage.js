@@ -341,7 +341,14 @@ export default function ControlPanelPage({ user }) {
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                         <div>
                           <p className="text-base sm:text-lg font-bold text-slate-900">{sale.party_name}</p>
-                          <p className="text-xs sm:text-sm text-slate-600">{formatDateTime(sale.timestamp)} | {sale.quantity_kg} kg by {sale.user_name}</p>
+                          <p className="text-xs sm:text-sm text-slate-600">
+                            {formatDateTime(sale.timestamp)} | {sale.quantity_kg} kg by {sale.user_name}
+                          </p>
+                          {sale.sku_type && (
+                            <p className="text-xs sm:text-sm font-semibold text-blue-600 mt-1">
+                              SKU: {sale.sku_type}
+                            </p>
+                          )}
                         </div>
                         <Button
                           onClick={() => handleDeleteSale(sale.id)}
