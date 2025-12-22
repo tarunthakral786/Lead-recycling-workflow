@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, ArrowLeft, Plus, X, Check, ChevronRight, Image, Calendar } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Camera, ArrowLeft, Plus, X, Check, ChevronRight, Image, Calendar, Package } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,8 +23,28 @@ export default function RefiningPage({ user }) {
   // Entry date for past-dated entries
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   
+  // Available RML SKUs
+  const [rmlSkus, setRmlSkus] = useState([]);
+  
+  useEffect(() => {
+    fetchRmlSkus();
+  }, []);
+  
+  const fetchRmlSkus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/rml-purchases/skus`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setRmlSkus(response.data);
+    } catch (error) {
+      console.error('Failed to load RML SKUs');
+    }
+  };
+  
   // Each batch tracks its own saved state per step
   const [batches, setBatches] = useState([{
+    input_source: 'manual', // 'manual' or SKU name
     lead_ingot_kg: '',
     lead_ingot_pieces: '',
     lead_ingot_images: [], // Multiple images support
@@ -45,6 +66,7 @@ export default function RefiningPage({ user }) {
 
   const addBatch = () => {
     setBatches([...batches, {
+      input_source: 'manual',
       lead_ingot_kg: '',
       lead_ingot_pieces: '',
       lead_ingot_images: [],
