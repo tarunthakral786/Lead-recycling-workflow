@@ -509,6 +509,65 @@ class LeadTrackAPITester:
             self.log_test("Stock Reduction After Sale", False, f"Error: {str(e)}")
             return False
 
+    def test_dross_recycling_entries(self):
+        """Test dross recycling entries endpoint"""
+        if not self.token:
+            self.log_test("Dross Recycling Entries", False, "No authentication token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.token}'}
+        
+        try:
+            response = requests.get(f"{self.api_url}/dross-recycling/entries", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", Dross entries count: {len(data)}"
+                if data:
+                    first_entry = data[0]
+                    details += f", First entry user: {first_entry.get('user_name', 'Unknown')}"
+                    details += f", Batches: {len(first_entry.get('batches', []))}"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Dross Recycling Entries", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Dross Recycling Entries", False, f"Error: {str(e)}")
+            return False
+
+    def test_dross_recoveries_endpoint(self):
+        """Test dross recoveries endpoint (should return empty list for backward compatibility)"""
+        if not self.token:
+            self.log_test("Dross Recoveries Endpoint", False, "No authentication token")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.token}'}
+        
+        try:
+            response = requests.get(f"{self.api_url}/dross/recoveries", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if isinstance(data, list):
+                    details += f", Returns list with {len(data)} items (expected empty for backward compatibility)"
+                    success = True  # Empty list is expected
+                else:
+                    success = False
+                    details += f", Expected list, got: {type(data)}"
+            else:
+                details += f", Error: {response.text}"
+                
+            self.log_test("Dross Recoveries Endpoint", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Dross Recoveries Endpoint", False, f"Error: {str(e)}")
+            return False
+
     def test_get_sales_list(self):
         """Test retrieving sales list"""
         if not self.token:
@@ -527,7 +586,13 @@ class LeadTrackAPITester:
                 details += f", Sales count: {len(data)}"
                 if data:
                     latest_sale = data[0]  # Should be sorted by timestamp desc
-                    details += f", Latest sale: {latest_sale.get('party_name')} - {latest_sale.get('quantity_kg')}kg of {latest_sale.get('sku_type')}"
+                    details += f", Latest sale: {latest_sale.get('party_name')} - {latest_sale.get('quantity_kg')}kg"
+                    # Check if sku_type is present (new feature)
+                    if 'sku_type' in latest_sale:
+                        details += f" of {latest_sale.get('sku_type')}"
+                        details += f", SKU type field present: ✓"
+                    else:
+                        details += f", SKU type field missing: ✗"
             else:
                 details += f", Error: {response.text}"
                 
