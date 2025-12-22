@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, ArrowLeft, Plus, X } from 'lucide-react';
+import { Camera, ArrowLeft, Plus, X, Calendar } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -16,6 +16,10 @@ const API = `${BACKEND_URL}/api`;
 export default function DrossRecyclingEntryPage({ user }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  
+  // Entry date for past-dated entries
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  
   const [batches, setBatches] = useState([{
     dross_type: 'initial',
     quantity_sent: '',
