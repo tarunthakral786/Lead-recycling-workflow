@@ -267,11 +267,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Dashboard Summary API"
-    - "Sales - Create sale with SKU"
-    - "Sales - Available SKUs API"
-    - "Dashboard with 6 key metrics"
-    - "Sales Page with SKU selection"
+    - "Change Password API and UI"
+    - "Sales SKU display in Control Panel"
+    - "Dross Recycling page with recoveries endpoint"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -279,38 +277,26 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: |
-      Implemented new Sales Module and updated Dashboard:
+      Completed additional Control Panel features and fixed Dross Recycling:
       
       BACKEND CHANGES:
-      1. Updated SaleEntry model to include sku_type field
-      2. Updated /api/sales POST endpoint to accept sku_type
-      3. Created new /api/sales/available-skus endpoint to list all sellable SKUs with stock
-      4. Updated /api/summary to return new simplified stats:
-         - pure_lead_stock: Pure Lead produced - Pure Lead sold
-         - rml_stock: RML purchased - RML used in refining - RML sold
-         - total_receivable: Recycling receivable - SANTOSH usage
-         - high_lead_stock: High Lead recovered - High Lead sold
-         - total_dross: Sum of all dross from refining
-         - antimony_recoverable: Sum of (SB% × quantity) from all refining batches
-      5. Fixed bug in RML purchases endpoint (line 560: sb variable was undefined)
+      1. Added PUT /api/admin/users/{user_id}/password - Allow TT to change any user's password
+      2. Added GET /api/dross/recoveries - Returns empty list for backward compatibility
       
       FRONTEND CHANGES:
-      1. Rewrote SalesPage.js with:
-         - Date picker for sale date
-         - Available inventory preview showing all SKUs with stock
-         - SKU dropdown showing product name, SB%, and available quantity
-         - Validation to prevent selling more than available stock
-      2. HomePage.js already had correct field names for dashboard stats
+      1. Control Panel - Users tab now shows "Change Password" button (blue key icon) for each user
+      2. Control Panel - Sales tab now shows "SKU: {sku_type}" in blue text for each sale
+      3. Added Change Password dialog with user info and new password input
       
       TESTING DONE:
-      - API tests via curl: /api/summary, /api/sales/available-skus, POST /api/sales all working
-      - Screenshots verified: Dashboard shows 6 metrics, Sales page shows SKU dropdown with stock
+      - Change password API tested via curl - working
+      - Control Panel UI verified with screenshots
+      - Dross Recycling page now loads correctly (was failing due to missing /dross/recoveries endpoint)
       
       Please test:
-      1. Login as TT and verify dashboard shows all 6 metrics correctly
-      2. Navigate to Sales page and verify SKU dropdown populates
-      3. Create a sale for Pure Lead and verify stock reduces on dashboard
-      4. Create a sale for an RML SKU and verify that specific SKU stock reduces
+      1. Control Panel - Change password for a user, then verify login works with new password
+      2. Dross Recycling page - Verify dross entries display correctly
+      3. Add HIGH LEAD Recovery flow - Create entry and verify High Lead stat on dashboard updates
       
       Credentials:
       - TT: tt@leadtrack.com / 9786
