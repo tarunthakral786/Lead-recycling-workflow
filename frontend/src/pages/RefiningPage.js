@@ -460,31 +460,55 @@ export default function RefiningPage({ user }) {
               <h2 className="text-xl font-bold text-slate-900" data-testid="step-title">Lead Ingot Input</h2>
               
               {/* RML SKU Selection */}
-              {rmlSkus.length > 0 && (
-                <Card className="bg-purple-50 border-purple-200 rounded-xl p-4">
+              <Card className="bg-purple-50 border-purple-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Package className="w-5 h-5 text-purple-600" />
+                  <Label className="text-sm font-bold text-purple-700 uppercase">Input Source</Label>
+                </div>
+                <Select
+                  value={batch.input_source}
+                  onValueChange={(value) => handleInputChange(currentBatchIndex, 'input_source', value)}
+                  disabled={isBatchStepSaved(currentBatchIndex)}
+                >
+                  <SelectTrigger className="h-14 text-lg px-4 w-full border-2 border-purple-200 rounded-lg bg-white">
+                    <SelectValue placeholder="Select input source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual" className="text-lg">Manual Entry (New Lead Ingot)</SelectItem>
+                    <SelectItem value="SANTOSH" className="text-lg font-bold text-green-700">SANTOSH (From Recycling Receivable)</SelectItem>
+                    {rmlSkus.map(sku => (
+                      <SelectItem key={sku.sku} value={sku.sku} className="text-lg">
+                        {sku.sku} - {sku.total_quantity_kg} kg available ({sku.total_pieces} pcs)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {batch.input_source === 'SANTOSH' && (
+                  <p className="text-sm text-green-600 mt-2">This quantity will be deducted from Remelted Lead Receivable</p>
+                )}
+                {batch.input_source !== 'manual' && batch.input_source !== 'SANTOSH' && (
+                  <p className="text-sm text-purple-600 mt-2">Using RML purchased stock as input</p>
+                )}
+              </Card>
+              
+              {/* SB Percentage - Required for SANTOSH */}
+              {batch.input_source === 'SANTOSH' && (
+                <Card className="bg-green-50 border-green-200 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Package className="w-5 h-5 text-purple-600" />
-                    <Label className="text-sm font-bold text-purple-700 uppercase">Input Source</Label>
+                    <Label className="text-sm font-bold text-green-700 uppercase">SB Percentage (Required)</Label>
                   </div>
-                  <Select
-                    value={batch.input_source}
-                    onValueChange={(value) => handleInputChange(currentBatchIndex, 'input_source', value)}
+                  <Input
+                    data-testid={`sb-percentage-input-${currentBatchIndex}`}
+                    type="number"
+                    step="0.01"
+                    value={batch.sb_percentage}
+                    onChange={(e) => handleInputChange(currentBatchIndex, 'sb_percentage', e.target.value)}
                     disabled={isBatchStepSaved(currentBatchIndex)}
-                  >
-                    <SelectTrigger className="h-14 text-lg px-4 w-full border-2 border-purple-200 rounded-lg bg-white">
-                      <SelectValue placeholder="Select input source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="manual" className="text-lg">Manual Entry (New Lead Ingot)</SelectItem>
-                      {rmlSkus.map(sku => (
-                        <SelectItem key={sku.sku} value={sku.sku} className="text-lg">
-                          {sku.sku} - {sku.total_quantity_kg} kg available ({sku.total_pieces} pcs)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {batch.input_source !== 'manual' && (
-                    <p className="text-sm text-purple-600 mt-2">Using RML purchased stock as input</p>
+                    className="h-14 text-xl px-4 w-full border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-400 bg-white"
+                    placeholder="Enter SB %"
+                  />
+                  {!batch.sb_percentage && (
+                    <p className="text-sm text-red-500 mt-2">* SB Percentage is required for SANTOSH entries</p>
                   )}
                 </Card>
               )}
