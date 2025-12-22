@@ -180,11 +180,31 @@ class SummaryStats(BaseModel):
     remelted_lead_in_stock: float
     total_dross: float
     total_high_lead: float
+    total_rml_purchased: float = 0
+
+# RML Purchase Models
+class RMLPurchaseBatch(BaseModel):
+    quantity_kg: float
+    pieces: int
+    sb_percentage: float
+    remarks: str = ""
+    image: str
+    sku: str = ""
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RMLPurchaseEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    entry_type: str = "rml_purchase"
+    batches: List[RMLPurchaseBatch]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # Routes
 @api_router.get("/")
 async def root():
-    return {"message": "LeadTrack Pro API"}
+    return {"message": "SPES PRO API"}
 
 # Admin - User Management
 @api_router.post("/admin/users", response_model=UserResponse)
