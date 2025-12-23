@@ -18,6 +18,7 @@ export default function ControlPanelPage({ user }) {
   const [users, setUsers] = useState([]);
   const [entries, setEntries] = useState([]);
   const [drossEntries, setDrossEntries] = useState([]);
+  const [rmlPurchases, setRmlPurchases] = useState([]);
   const [sales, setSales] = useState([]);
   const [settings, setSettings] = useState({ pp_battery_percent: 60.5, mc_smf_battery_percent: 57.5, hr_battery_percent: 50.0 });
   const [loading, setLoading] = useState(true);
@@ -38,16 +39,18 @@ export default function ControlPanelPage({ user }) {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [usersRes, entriesRes, drossRes, salesRes, settingsRes] = await Promise.all([
+      const [usersRes, entriesRes, drossRes, rmlRes, salesRes, settingsRes] = await Promise.all([
         axios.get(`${API}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/entries`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/dross-recycling/entries`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${API}/rml-purchases`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/sales`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/admin/recovery-settings`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       setUsers(usersRes.data);
       setEntries(entriesRes.data);
       setDrossEntries(drossRes.data);
+      setRmlPurchases(rmlRes.data);
       setSales(salesRes.data);
       setSettings(settingsRes.data);
     } catch (error) {
