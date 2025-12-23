@@ -429,6 +429,48 @@ export default function ControlPanelPage({ user }) {
               </div>
             </TabsContent>
 
+            <TabsContent value="santosh">
+              <div className="space-y-3 sm:space-y-4">
+                {rmlReceivedSantosh.length === 0 ? (
+                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
+                    No RML Received Santosh entries yet
+                  </Card>
+                ) : (
+                  rmlReceivedSantosh.map((entry) => (
+                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                        <div className="flex-1">
+                          <p className="text-xs sm:text-sm text-slate-600 mb-2">
+                            {formatDateTime(entry.timestamp)} by {entry.user_name}
+                          </p>
+                          {entry.batches && entry.batches.map((batch, idx) => (
+                            <div key={idx} className="bg-green-50 rounded-lg p-3 mb-2">
+                              <p className="text-base sm:text-lg font-bold text-green-800">
+                                {batch.sku || `Batch ${idx + 1}`}
+                              </p>
+                              <p className="text-sm text-slate-600">
+                                {batch.quantity_kg} kg | {batch.pieces} pcs | SB: {batch.sb_percentage}%
+                              </p>
+                              {batch.remarks && (
+                                <p className="text-xs text-slate-500 mt-1">Remarks: {batch.remarks}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <Button
+                          onClick={() => handleDeleteRmlReceivedSantosh(entry.id)}
+                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
             <TabsContent value="sales">
               <div className="space-y-3 sm:space-y-4">
                 {sales.length === 0 ? (
