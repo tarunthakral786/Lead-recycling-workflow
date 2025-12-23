@@ -39,11 +39,12 @@ export default function ControlPanelPage({ user }) {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [usersRes, entriesRes, drossRes, rmlRes, salesRes, settingsRes] = await Promise.all([
+      const [usersRes, entriesRes, drossRes, rmlRes, rmlSantoshRes, salesRes, settingsRes] = await Promise.all([
         axios.get(`${API}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/entries`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/dross-recycling/entries`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/rml-purchases`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${API}/rml-received-santosh`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/sales`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`${API}/admin/recovery-settings`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
@@ -51,6 +52,7 @@ export default function ControlPanelPage({ user }) {
       setEntries(entriesRes.data);
       setDrossEntries(drossRes.data);
       setRmlPurchases(rmlRes.data);
+      setRmlReceivedSantosh(rmlSantoshRes.data);
       setSales(salesRes.data);
       setSettings(settingsRes.data);
     } catch (error) {
