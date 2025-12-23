@@ -699,11 +699,20 @@ async def clear_all_data(admin: dict = Depends(require_admin)):
 
 @api_router.get("/rml-purchases/skus")
 async def get_rml_skus(current_user: dict = Depends(get_current_user)):
-    """Get available RML SKUs for use in refining"""
+    """Get available RML SKUs for use in refining (includes RML Purchases and RML Received Santosh)"""
+    # Get RML Purchases
     entries = await db.rml_purchases.find({}, {"_id": 0}).to_list(1000)
+    
+    # Get RML Received Santosh
+    santosh_entries = await db.rml_received_santosh.find({}, {"_id": 0}).to_list(1000)
+    
+    # Get refining entries to calculate used quantities
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
     
     # Aggregate SKUs with available quantities
     skus = {}
+    
+    # Add RML Purchases
     for entry in entries:
         for batch in entry.get('batches', []):
             sku = batch.get('sku', '')
@@ -718,7 +727,41 @@ async def get_rml_skus(current_user: dict = Depends(get_current_user)):
                 skus[sku]['total_quantity_kg'] += batch.get('quantity_kg', 0)
                 skus[sku]['total_pieces'] += batch.get('pieces', 0)
     
-    return list(skus.values())
+    # Add RML Received Santosh
+    for entry in santosh_entries:
+        for batch in entry.get('batches', []):
+            sku = batch.get('sku', '')
+            if sku:
+                if sku not in skus:
+                    skus[sku] = {
+                        'sku': sku,
+                        'sb_percentage': batch.get('sb_percentage', 0),
+                        'total_quantity_kg': 0,
+                        'total_pieces': 0
+                    }
+                skus[sku]['total_quantity_kg'] += batch.get('quantity_kg', 0)
+                skus[sku]['total_pieces'] += batch.get('pieces', 0)
+    
+    # Deduct used in refining
+    for entry in refining_entries:
+        for batch in entry.get('batches', []):
+            input_source = batch.get('input_source', 'manual')
+            if input_source in skus:
+                skus[input_source]['total_quantity_kg'] -= batch.get('lead_ingot_kg', 0)
+    
+    # Return SKUs with available quantity > 0
+    result = []
+    for sku, data in skus.items():
+        available = max(0, data['total_quantity_kg'])
+        if available > 0:
+            result.append({
+                'sku': data['sku'],
+                'sb_percentage': data['sb_percentage'],
+                'total_quantity_kg': round(available, 2),
+                'total_pieces': data['total_pieces']
+            })
+    
+    return result
 
 @api_router.delete("/admin/rml-purchases/{entry_id}")
 async def delete_rml_purchase(entry_id: str, admin: dict = Depends(require_admin)):
