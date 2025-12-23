@@ -763,10 +763,11 @@ async def get_dross_data(current_user: dict = Depends(get_current_user)):
                 'user_name': entry['user_name'],
                 'timestamp': entry['timestamp'],
                 'batch_number': batch_idx,
-                'initial_dross_kg': batch['initial_dross_kg'],
-                'dross_2nd_kg': batch['dross_2nd_kg'],
-                'dross_3rd_kg': batch['dross_3rd_kg'],
-                'total_dross': batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+                'initial_dross_kg': batch.get('initial_dross_kg', 0),
+                'cu_dross_kg': batch.get('cu_dross_kg', 0),
+                'sn_dross_kg': batch.get('sn_dross_kg', 0),
+                'sb_dross_kg': batch.get('sb_dross_kg', 0),
+                'total_dross': batch.get('initial_dross_kg', 0) + batch.get('cu_dross_kg', 0) + batch.get('sn_dross_kg', 0) + batch.get('sb_dross_kg', 0)
             })
     
     dross_data.sort(key=lambda x: x['timestamp'], reverse=True)
