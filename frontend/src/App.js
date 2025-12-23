@@ -79,6 +79,10 @@ function App() {
             element={user ? <RMLPurchasesPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
+            path="/rml-received-santosh" 
+            element={user ? <RMLReceivedSantoshPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
             path="/control-panel" 
             element={user ? <ControlPanelPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
