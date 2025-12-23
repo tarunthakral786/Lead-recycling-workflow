@@ -233,12 +233,15 @@ export default function ControlPanelPage({ user }) {
         ) : (
           <Tabs defaultValue="users" className="w-full">
             {/* Mobile-friendly tabs - scrollable on small screens */}
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 sm:gap-0 mb-4 sm:mb-6 bg-slate-200 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1 sm:gap-0 mb-4 sm:mb-6 bg-slate-200 p-1 rounded-lg">
               <TabsTrigger value="users" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
                 Users ({users.length})
               </TabsTrigger>
               <TabsTrigger value="entries" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
                 Entries ({entries.length + drossEntries.length})
+              </TabsTrigger>
+              <TabsTrigger value="rml" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
+                RML ({rmlPurchases.length})
               </TabsTrigger>
               <TabsTrigger value="sales" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
                 Sales ({sales.length})
