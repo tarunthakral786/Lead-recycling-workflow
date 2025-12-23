@@ -692,6 +692,9 @@ async def clear_all_data(admin: dict = Depends(require_admin)):
     result = await db.rml_purchases.delete_many({})
     deleted['rml_purchases'] = result.deleted_count
     
+    result = await db.rml_received_santosh.delete_many({})
+    deleted['rml_received_santosh'] = result.deleted_count
+    
     result = await db.sales.delete_many({})
     deleted['sales'] = result.deleted_count
     
