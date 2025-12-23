@@ -727,6 +727,132 @@ async def delete_rml_purchase(entry_id: str, admin: dict = Depends(require_admin
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"message": "RML purchase deleted successfully"}
 
+# RML Received Santosh - deducts from recycling receivable
+@api_router.post("/rml-received-santosh")
+async def create_rml_received_santosh(
+    batches_data: str = Form(...),
+    entry_date: Optional[str] = Form(None),
+    files: List[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    import json
+    batches_json = json.loads(batches_data)
+    
+    batches = []
+    for idx, batch_data in enumerate(batches_json):
+        image = ""
+        if idx < len(files):
+            image = base64.b64encode(await files[idx].read()).decode('utf-8')
+        
+        # Generate SKU: "SANTOSH, {sb}%, {date}"
+        remarks = batch_data.get('remarks', 'SANTOSH')
+        if not remarks:
+            remarks = 'SANTOSH'
+        
+        # Use entry_date if provided, otherwise use current date
+        if entry_date:
+            formatted_date = entry_date
+        else:
+            formatted_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        
+        sku = f"SANTOSH-{remarks}, {batch_data['sb_percentage']}%, {formatted_date}"
+        
+        batch = RMLReceivedSantoshBatch(
+            quantity_kg=batch_data['quantity_kg'],
+            pieces=batch_data['pieces'],
+            sb_percentage=batch_data['sb_percentage'],
+            remarks=remarks,
+            image=image,
+            sku=sku
+        )
+        batches.append(batch)
+    
+    entry = RMLReceivedSantoshEntry(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        batches=batches
+    )
+    
+    doc = entry.model_dump()
+    
+    # Handle custom entry date
+    if entry_date:
+        from datetime import datetime as dt
+        custom_date = dt.fromisoformat(entry_date + "T12:00:00")
+        doc['timestamp'] = custom_date.isoformat()
+    else:
+        doc['timestamp'] = doc['timestamp'].isoformat()
+    
+    for batch in doc['batches']:
+        batch['timestamp'] = batch['timestamp'].isoformat()
+    
+    await db.rml_received_santosh.insert_one(doc)
+    return {"id": entry.id, "message": "RML Received Santosh entry created successfully"}
+
+@api_router.get("/rml-received-santosh")
+async def get_rml_received_santosh(current_user: dict = Depends(get_current_user)):
+    entries = await db.rml_received_santosh.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    
+    for entry in entries:
+        if isinstance(entry['timestamp'], str):
+            entry['timestamp'] = datetime.fromisoformat(entry['timestamp'])
+        
+        for batch in entry.get('batches', []):
+            if isinstance(batch.get('timestamp'), str):
+                batch['timestamp'] = datetime.fromisoformat(batch['timestamp'])
+            batch.pop('image', None)  # Don't return image data in list
+    
+    return entries
+
+@api_router.get("/rml-received-santosh/skus")
+async def get_rml_received_santosh_skus(current_user: dict = Depends(get_current_user)):
+    """Get available RML Received Santosh SKUs for use in refining"""
+    entries = await db.rml_received_santosh.find({}, {"_id": 0}).to_list(1000)
+    
+    # Get refining entries to calculate used quantities
+    refining_entries = await db.entries.find({"entry_type": "refining"}, {"_id": 0}).to_list(10000)
+    
+    # Aggregate SKUs with quantities
+    skus = {}
+    for entry in entries:
+        for batch in entry.get('batches', []):
+            sku = batch.get('sku', '')
+            if sku:
+                if sku not in skus:
+                    skus[sku] = {
+                        'quantity_kg': 0,
+                        'sb_percentage': batch.get('sb_percentage', 0)
+                    }
+                skus[sku]['quantity_kg'] += batch.get('quantity_kg', 0)
+    
+    # Deduct used in refining
+    for entry in refining_entries:
+        for batch in entry.get('batches', []):
+            input_source = batch.get('input_source', 'manual')
+            if input_source.startswith('SANTOSH-') and input_source in skus:
+                skus[input_source]['quantity_kg'] -= batch.get('lead_ingot_kg', 0)
+    
+    # Return SKUs with available quantity > 0
+    result = []
+    for sku, data in skus.items():
+        available = max(0, data['quantity_kg'])
+        if available > 0:
+            result.append({
+                'sku': sku,
+                'available_kg': round(available, 2),
+                'sb_percentage': data['sb_percentage']
+            })
+    
+    return result
+
+@api_router.delete("/admin/rml-received-santosh/{entry_id}")
+async def delete_rml_received_santosh(entry_id: str, admin: dict = Depends(require_admin)):
+    """Delete an RML Received Santosh entry (TT admin only)"""
+    result = await db.rml_received_santosh.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="RML Received Santosh entry not found")
+    return {"message": "RML Received Santosh entry deleted successfully"}
+
 @api_router.get("/entries")
 async def get_entries(current_user: dict = Depends(get_current_user)):
     entries = await db.entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
