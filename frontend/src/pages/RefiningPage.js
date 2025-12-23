@@ -596,37 +596,54 @@ export default function RefiningPage({ user }) {
 
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  2nd Dross (KG)
+                  CU Dross (KG)
                 </Label>
                 <Input
-                  data-testid={`dross-2nd-kg-input-${currentBatchIndex}`}
+                  data-testid={`cu-dross-kg-input-${currentBatchIndex}`}
                   type="number"
                   step="0.01"
-                  value={batch.dross_2nd_kg}
-                  onChange={(e) => handleInputChange(currentBatchIndex, 'dross_2nd_kg', e.target.value)}
+                  value={batch.cu_dross_kg}
+                  onChange={(e) => handleInputChange(currentBatchIndex, 'cu_dross_kg', e.target.value)}
                   disabled={isBatchStepSaved(currentBatchIndex)}
                   className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 disabled:bg-slate-100"
                   placeholder="0.00"
                 />
               </div>
-              {renderMultiImageUpload(currentBatchIndex, 'dross_2nd_images', 'Photos of 2nd Dross')}
+              {renderMultiImageUpload(currentBatchIndex, 'cu_dross_images', 'Photos of CU Dross')}
 
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  3rd Dross (KG)
+                  SN Dross (KG)
                 </Label>
                 <Input
-                  data-testid={`dross-3rd-kg-input-${currentBatchIndex}`}
+                  data-testid={`sn-dross-kg-input-${currentBatchIndex}`}
                   type="number"
                   step="0.01"
-                  value={batch.dross_3rd_kg}
-                  onChange={(e) => handleInputChange(currentBatchIndex, 'dross_3rd_kg', e.target.value)}
+                  value={batch.sn_dross_kg}
+                  onChange={(e) => handleInputChange(currentBatchIndex, 'sn_dross_kg', e.target.value)}
                   disabled={isBatchStepSaved(currentBatchIndex)}
                   className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 disabled:bg-slate-100"
                   placeholder="0.00"
                 />
               </div>
-              {renderMultiImageUpload(currentBatchIndex, 'dross_3rd_images', 'Photos of 3rd Dross')}
+              {renderMultiImageUpload(currentBatchIndex, 'sn_dross_images', 'Photos of SN Dross')}
+
+              <div>
+                <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  SB Dross (KG)
+                </Label>
+                <Input
+                  data-testid={`sb-dross-kg-input-${currentBatchIndex}`}
+                  type="number"
+                  step="0.01"
+                  value={batch.sb_dross_kg}
+                  onChange={(e) => handleInputChange(currentBatchIndex, 'sb_dross_kg', e.target.value)}
+                  disabled={isBatchStepSaved(currentBatchIndex)}
+                  className="h-16 text-2xl px-4 w-full border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 disabled:bg-slate-100"
+                  placeholder="0.00"
+                />
+              </div>
+              {renderMultiImageUpload(currentBatchIndex, 'sb_dross_images', 'Photos of SB Dross')}
 
               {/* Optional Remarks */}
               <div>
