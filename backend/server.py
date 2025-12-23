@@ -929,7 +929,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     
     # Calculate total dross from refining
     total_dross = sum(
-        batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+        batch.get('initial_dross_kg', 0) + batch.get('cu_dross_kg', 0) + batch.get('sn_dross_kg', 0) + batch.get('sb_dross_kg', 0)
         for entry in refining_entries
         for batch in entry.get('batches', [])
     )
