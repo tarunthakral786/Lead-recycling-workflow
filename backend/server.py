@@ -185,6 +185,24 @@ class SaleCreate(BaseModel):
     quantity_kg: float
     entry_date: Optional[str] = None
 
+# RML Received from Santosh (deducts from recycling receivable)
+class RMLReceivedSantoshBatch(BaseModel):
+    quantity_kg: float
+    pieces: int
+    sb_percentage: float
+    remarks: str = ""  # Seller name / Remark
+    image: str = ""
+    sku: str = ""  # Generated SKU
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RMLReceivedSantoshEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    batches: List[RMLReceivedSantoshBatch]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class SummaryStats(BaseModel):
     # New simplified dashboard stats
     pure_lead_stock: float = 0  # Pure Lead produced - Pure Lead sold
