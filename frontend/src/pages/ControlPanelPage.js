@@ -167,6 +167,21 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
+  const handleDeleteRmlPurchase = async (entryId) => {
+    if (!confirm('Are you sure you want to delete this RML purchase entry?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/rml-purchases/${entryId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success('RML purchase entry deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete RML purchase entry');
+    }
+  };
+
   const handleUpdateSettings = async () => {
     try {
       const token = localStorage.getItem('token');
