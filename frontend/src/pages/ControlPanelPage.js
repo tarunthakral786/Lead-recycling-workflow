@@ -185,6 +185,21 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
+  const handleDeleteRmlReceivedSantosh = async (entryId) => {
+    if (!confirm('Are you sure you want to delete this RML Received Santosh entry?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/rml-received-santosh/${entryId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success('RML Received Santosh entry deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete RML Received Santosh entry');
+    }
+  };
+
   const handleUpdateSettings = async () => {
     try {
       const token = localStorage.getItem('token');
