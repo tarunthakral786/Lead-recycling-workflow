@@ -170,6 +170,15 @@ export default function HomePage({ user, onLogout }) {
             <h2 className="text-2xl font-bold text-white mb-1">RML PURCHASES</h2>
             <p className="text-base text-purple-50">Purchase remelted lead inventory</p>
           </Card>
+
+          <Card
+            className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all active:scale-95"
+            onClick={() => navigate('/rml-received-santosh')}
+          >
+            <Package className="w-12 h-12 text-white mb-3" />
+            <h2 className="text-2xl font-bold text-white mb-1">RML RECEIVED SANTOSH</h2>
+            <p className="text-base text-green-50">Receive RML from recycling receivable</p>
+          </Card>
         </div>
 
         {/* Bottom Actions */}
