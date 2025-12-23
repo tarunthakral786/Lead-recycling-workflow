@@ -51,10 +51,12 @@ export default function RefiningPage({ user }) {
     lead_ingot_images: [], // Multiple images support
     initial_dross_kg: '',
     initial_dross_images: [],
-    dross_2nd_kg: '',
-    dross_2nd_images: [],
-    dross_3rd_kg: '',
-    dross_3rd_images: [],
+    cu_dross_kg: '',
+    cu_dross_images: [],
+    sn_dross_kg: '',
+    sn_dross_images: [],
+    sb_dross_kg: '',
+    sb_dross_images: [],
     dross_remarks: '', // Optional remarks for dross
     pure_lead_kg: '',
     pure_lead_pieces: '', // Added pieces for pure lead
