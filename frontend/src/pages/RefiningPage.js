@@ -374,8 +374,8 @@ export default function RefiningPage({ user }) {
           {isBatchStepSaved(idx) && <Check className="w-4 h-4" />}
         </Button>
       ))}
-      {/* Only show Add Batch button in Step 1 (Lead Ingot input) */}
-      {step === 1 && (
+      {/* Show Add Batch button in Step 1 (Lead Ingot) and Step 3 (Pure Lead), but NOT in Step 2 (Dross) */}
+      {(step === 1 || step === 3) && (
         <Button
           onClick={addBatch}
           data-testid="add-batch-button"
