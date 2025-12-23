@@ -496,6 +496,22 @@ export default function ControlPanelPage({ user }) {
                     <Settings className="w-5 h-5 mr-2" />
                     Save Settings
                   </Button>
+
+                  {/* Danger Zone */}
+                  <div className="mt-8 pt-6 border-t-2 border-red-200">
+                    <h4 className="text-lg font-bold text-red-600 mb-4">⚠️ Danger Zone</h4>
+                    <Button
+                      onClick={handleClearAllData}
+                      data-testid="clear-all-data-button"
+                      className="w-full h-12 sm:h-14 text-lg sm:text-xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg rounded-lg"
+                    >
+                      <Trash2 className="w-5 h-5 mr-2" />
+                      Clear All Data
+                    </Button>
+                    <p className="text-sm text-red-500 mt-2">
+                      This will delete all entries (Refining, Recycling, Dross, RML, Sales). Users and settings will be kept.
+                    </p>
+                  </div>
                 </div>
               </Card>
             </TabsContent>
