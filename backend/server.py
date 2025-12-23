@@ -112,10 +112,12 @@ class RefiningBatch(BaseModel):
     lead_ingot_image: str
     initial_dross_kg: float
     initial_dross_image: str
-    dross_2nd_kg: float
-    dross_2nd_image: str
-    dross_3rd_kg: float
-    dross_3rd_image: str
+    cu_dross_kg: float
+    cu_dross_image: str
+    sn_dross_kg: float
+    sn_dross_image: str
+    sb_dross_kg: float
+    sb_dross_image: str
     dross_remarks: Optional[str] = ""
     pure_lead_kg: float
     pure_lead_pieces: int = 0
