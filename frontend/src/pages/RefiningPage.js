@@ -241,16 +241,18 @@ export default function RefiningPage({ user }) {
           lead_ingot_kg: parseFloat(batch.lead_ingot_kg),
           lead_ingot_pieces: parseInt(batch.lead_ingot_pieces),
           initial_dross_kg: parseFloat(batch.initial_dross_kg),
-          dross_2nd_kg: parseFloat(batch.dross_2nd_kg),
-          dross_3rd_kg: parseFloat(batch.dross_3rd_kg),
+          cu_dross_kg: parseFloat(batch.cu_dross_kg),
+          sn_dross_kg: parseFloat(batch.sn_dross_kg),
+          sb_dross_kg: parseFloat(batch.sb_dross_kg),
           dross_remarks: batch.dross_remarks || '',
           pure_lead_kg: parseFloat(batch.pure_lead_kg),
           pure_lead_pieces: parseInt(batch.pure_lead_pieces),
           // Include image counts for backend processing
           lead_ingot_image_count: batch.lead_ingot_images.length,
           initial_dross_image_count: batch.initial_dross_images.length,
-          dross_2nd_image_count: batch.dross_2nd_images.length,
-          dross_3rd_image_count: batch.dross_3rd_images.length,
+          cu_dross_image_count: batch.cu_dross_images.length,
+          sn_dross_image_count: batch.sn_dross_images.length,
+          sb_dross_image_count: batch.sb_dross_images.length,
           pure_lead_image_count: batch.pure_lead_images.length
         };
       });
@@ -263,8 +265,9 @@ export default function RefiningPage({ user }) {
         // Send first image of each type (for backward compatibility)
         if (batch.lead_ingot_images[0]) form.append('files', batch.lead_ingot_images[0]);
         if (batch.initial_dross_images[0]) form.append('files', batch.initial_dross_images[0]);
-        if (batch.dross_2nd_images[0]) form.append('files', batch.dross_2nd_images[0]);
-        if (batch.dross_3rd_images[0]) form.append('files', batch.dross_3rd_images[0]);
+        if (batch.cu_dross_images[0]) form.append('files', batch.cu_dross_images[0]);
+        if (batch.sn_dross_images[0]) form.append('files', batch.sn_dross_images[0]);
+        if (batch.sb_dross_images[0]) form.append('files', batch.sb_dross_images[0]);
         if (batch.pure_lead_images[0]) form.append('files', batch.pure_lead_images[0]);
       });
 
