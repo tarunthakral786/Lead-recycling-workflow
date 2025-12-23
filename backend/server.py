@@ -655,6 +655,26 @@ async def delete_rml_purchase(entry_id: str, admin: dict = Depends(require_admin
         raise HTTPException(status_code=404, detail="RML purchase entry not found")
     return {"message": "RML purchase entry deleted successfully"}
 
+@api_router.delete("/admin/clear-all-data")
+async def clear_all_data(admin: dict = Depends(require_admin)):
+    """Clear all entries from the database (TT admin only) - keeps users and settings"""
+    deleted = {}
+    
+    # Clear all data collections
+    result = await db.entries.delete_many({})
+    deleted['entries'] = result.deleted_count
+    
+    result = await db.dross_recycling_entries.delete_many({})
+    deleted['dross_recycling'] = result.deleted_count
+    
+    result = await db.rml_purchases.delete_many({})
+    deleted['rml_purchases'] = result.deleted_count
+    
+    result = await db.sales.delete_many({})
+    deleted['sales'] = result.deleted_count
+    
+    return {"message": "All data cleared successfully", "deleted": deleted}
+
 @api_router.get("/rml-purchases/skus")
 async def get_rml_skus(current_user: dict = Depends(get_current_user)):
     """Get available RML SKUs for use in refining"""
