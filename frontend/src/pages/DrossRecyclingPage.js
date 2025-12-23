@@ -204,20 +204,25 @@ export default function DrossRecyclingPage({ user }) {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="bg-amber-50 rounded-lg p-4">
                         <span className="text-sm font-bold text-amber-700 uppercase block mb-1">Initial Dross</span>
-                        <p className="text-2xl font-bold text-amber-800">{item.initial_dross_kg} kg</p>
+                        <p className="text-2xl font-bold text-amber-800">{item.initial_dross_kg || 0} kg</p>
                       </div>
 
                       <div className="bg-orange-50 rounded-lg p-4">
-                        <span className="text-sm font-bold text-orange-700 uppercase block mb-1">2nd Dross</span>
-                        <p className="text-2xl font-bold text-orange-800">{item.dross_2nd_kg} kg</p>
+                        <span className="text-sm font-bold text-orange-700 uppercase block mb-1">CU Dross</span>
+                        <p className="text-2xl font-bold text-orange-800">{item.cu_dross_kg || 0} kg</p>
                       </div>
 
                       <div className="bg-red-50 rounded-lg p-4">
-                        <span className="text-sm font-bold text-red-700 uppercase block mb-1">3rd Dross</span>
-                        <p className="text-2xl font-bold text-red-800">{item.dross_3rd_kg} kg</p>
+                        <span className="text-sm font-bold text-red-700 uppercase block mb-1">SN Dross</span>
+                        <p className="text-2xl font-bold text-red-800">{item.sn_dross_kg || 0} kg</p>
+                      </div>
+
+                      <div className="bg-purple-50 rounded-lg p-4">
+                        <span className="text-sm font-bold text-purple-700 uppercase block mb-1">SB Dross</span>
+                        <p className="text-2xl font-bold text-purple-800">{item.sb_dross_kg || 0} kg</p>
                       </div>
 
                       <div className="bg-slate-50 rounded-lg p-4 border-2 border-slate-200">
