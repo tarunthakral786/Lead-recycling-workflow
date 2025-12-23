@@ -172,8 +172,9 @@ export default function RefiningPage({ user }) {
       return batch.lead_ingot_kg && batch.lead_ingot_pieces && batch.lead_ingot_images.length > 0;
     } else if (step === 2) {
       return batch.initial_dross_kg && batch.initial_dross_images.length > 0 && 
-             batch.dross_2nd_kg && batch.dross_2nd_images.length > 0 && 
-             batch.dross_3rd_kg && batch.dross_3rd_images.length > 0;
+             batch.cu_dross_kg && batch.cu_dross_images.length > 0 && 
+             batch.sn_dross_kg && batch.sn_dross_images.length > 0 &&
+             batch.sb_dross_kg && batch.sb_dross_images.length > 0;
     } else if (step === 3) {
       return batch.pure_lead_kg && batch.pure_lead_pieces && batch.pure_lead_images.length > 0;
     }
