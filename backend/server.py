@@ -1058,16 +1058,17 @@ async def export_dross_excel(current_user: dict = Depends(get_current_user)):
             timestamp = datetime.fromisoformat(timestamp)
         
         for batch_idx, batch in enumerate(entry.get('batches', []), 1):
-            total_dross = batch['initial_dross_kg'] + batch['dross_2nd_kg'] + batch['dross_3rd_kg']
+            total_dross = batch.get('initial_dross_kg', 0) + batch.get('cu_dross_kg', 0) + batch.get('sn_dross_kg', 0) + batch.get('sb_dross_kg', 0)
             
             ws_dross.cell(row=row_num, column=1, value=timestamp.strftime("%Y-%m-%d"))
             ws_dross.cell(row=row_num, column=2, value=timestamp.strftime("%H:%M:%S"))
             ws_dross.cell(row=row_num, column=3, value=entry['user_name'])
             ws_dross.cell(row=row_num, column=4, value=f"Batch {batch_idx}")
-            ws_dross.cell(row=row_num, column=5, value=batch['initial_dross_kg'])
-            ws_dross.cell(row=row_num, column=6, value=batch['dross_2nd_kg'])
-            ws_dross.cell(row=row_num, column=7, value=batch['dross_3rd_kg'])
-            ws_dross.cell(row=row_num, column=8, value=total_dross)
+            ws_dross.cell(row=row_num, column=5, value=batch.get('initial_dross_kg', 0))
+            ws_dross.cell(row=row_num, column=6, value=batch.get('cu_dross_kg', 0))
+            ws_dross.cell(row=row_num, column=7, value=batch.get('sn_dross_kg', 0))
+            ws_dross.cell(row=row_num, column=8, value=batch.get('sb_dross_kg', 0))
+            ws_dross.cell(row=row_num, column=9, value=total_dross)
             row_num += 1
     
     dross_recycling = await db.dross_recycling_entries.find({}, {"_id": 0}).sort("timestamp", -1).to_list(10000)
