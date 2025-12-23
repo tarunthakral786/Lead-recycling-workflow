@@ -1074,6 +1074,26 @@ async def get_available_skus(current_user: dict = Depends(get_current_user)):
             if sku_type in rml_skus:
                 rml_skus[sku_type]['purchased_kg'] -= sale['quantity_kg']
     
+    # Add RML Received Santosh entries to rml_skus
+    rml_santosh_entries = await db.rml_received_santosh.find({}, {"_id": 0}).to_list(10000)
+    for entry in rml_santosh_entries:
+        for batch in entry.get('batches', []):
+            sku = batch.get('sku', '')
+            if sku:
+                if sku not in rml_skus:
+                    rml_skus[sku] = {
+                        'purchased_kg': 0,
+                        'sb_percentage': batch.get('sb_percentage', 0)
+                    }
+                rml_skus[sku]['purchased_kg'] += batch.get('quantity_kg', 0)
+    
+    # Deduct Santosh SKUs used in refining
+    for entry in refining_entries:
+        for batch in entry.get('batches', []):
+            input_source = batch.get('input_source', 'manual')
+            if input_source.startswith('SANTOSH-') and input_source in rml_skus:
+                rml_skus[input_source]['purchased_kg'] -= batch.get('lead_ingot_kg', 0)
+    
     # Add RML SKUs with positive stock
     for sku, data in rml_skus.items():
         stock = max(0, data['purchased_kg'])
