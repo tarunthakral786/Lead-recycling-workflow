@@ -370,17 +370,19 @@ async def create_refining_entry(
             lead_ingot_image=base64.b64encode(await files[file_idx].read()).decode('utf-8'),
             initial_dross_kg=batch_data['initial_dross_kg'],
             initial_dross_image=base64.b64encode(await files[file_idx + 1].read()).decode('utf-8'),
-            dross_2nd_kg=batch_data['dross_2nd_kg'],
-            dross_2nd_image=base64.b64encode(await files[file_idx + 2].read()).decode('utf-8'),
-            dross_3rd_kg=batch_data['dross_3rd_kg'],
-            dross_3rd_image=base64.b64encode(await files[file_idx + 3].read()).decode('utf-8'),
+            cu_dross_kg=batch_data['cu_dross_kg'],
+            cu_dross_image=base64.b64encode(await files[file_idx + 2].read()).decode('utf-8'),
+            sn_dross_kg=batch_data['sn_dross_kg'],
+            sn_dross_image=base64.b64encode(await files[file_idx + 3].read()).decode('utf-8'),
+            sb_dross_kg=batch_data['sb_dross_kg'],
+            sb_dross_image=base64.b64encode(await files[file_idx + 4].read()).decode('utf-8'),
             dross_remarks=batch_data.get('dross_remarks', ''),
             pure_lead_kg=batch_data['pure_lead_kg'],
             pure_lead_pieces=batch_data.get('pure_lead_pieces', 0),
-            pure_lead_image=base64.b64encode(await files[file_idx + 4].read()).decode('utf-8')
+            pure_lead_image=base64.b64encode(await files[file_idx + 5].read()).decode('utf-8')
         )
         batches.append(batch)
-        file_idx += 5
+        file_idx += 6
     
     entry = RefiningEntry(
         user_id=current_user["id"],
