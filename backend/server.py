@@ -1039,7 +1039,7 @@ async def export_dross_excel(current_user: dict = Depends(get_current_user)):
     
     headers_dross = [
         "Date", "Time", "Employee", "Batch #",
-        "Initial Dross (kg)", "2nd Dross (kg)", "3rd Dross (kg)", "Total Dross (kg)"
+        "Initial Dross (kg)", "CU Dross (kg)", "SN Dross (kg)", "SB Dross (kg)", "Total Dross (kg)"
     ]
     
     header_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
