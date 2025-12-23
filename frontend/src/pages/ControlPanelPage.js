@@ -194,6 +194,22 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
+  const handleClearAllData = async () => {
+    if (!confirm('⚠️ WARNING: This will delete ALL entries (Refining, Recycling, Dross, RML Purchases, Sales). Users and settings will be kept. Are you sure?')) return;
+    if (!confirm('This action cannot be undone. Type "yes" to confirm you want to clear all data.')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(`${API}/admin/clear-all-data`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success(`All data cleared! Deleted: ${JSON.stringify(response.data.deleted)}`);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to clear data');
+    }
+  };
+
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
