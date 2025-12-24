@@ -1203,12 +1203,21 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
-    # Calculate TOTAL lead input used in ALL refining entries
-    # This should be deducted from RML stock since all refining uses RML
-    total_lead_used_in_refining = sum(
+    # Calculate RML Purchases used in refining (non-manual, non-SANTOSH, non-SANTOSH- input sources)
+    rml_purchases_used_in_refining = sum(
         batch.get('lead_ingot_kg', 0)
         for entry in refining_entries
         for batch in entry.get('batches', [])
+        if batch.get('input_source') not in ['manual', 'SANTOSH', None, ''] 
+        and not batch.get('input_source', '').startswith('SANTOSH-')
+    )
+    
+    # Calculate RML Received Santosh used in refining (SANTOSH- prefixed SKUs)
+    santosh_skus_used_in_refining = sum(
+        batch.get('lead_ingot_kg', 0)
+        for entry in refining_entries
+        for batch in entry.get('batches', [])
+        if batch.get('input_source', '').startswith('SANTOSH-')
     )
     
     # Get all sales
@@ -1222,8 +1231,8 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     
     # Calculate final stocks
     pure_lead_stock = max(0, total_pure_lead_manufactured - pure_lead_sold)
-    # RML Stock = RML Purchases + RML Received Santosh - ALL Lead Used in Refining - RML Sold
-    rml_stock = max(0, total_rml_purchased + rml_received_santosh_total - total_lead_used_in_refining - rml_sold)
+    # RML Stock = RML Purchases + RML Received Santosh - RML SKUs Used in Refining - RML Sold
+    rml_stock = max(0, total_rml_purchased + rml_received_santosh_total - rml_purchases_used_in_refining - santosh_skus_used_in_refining - rml_sold)
     high_lead_stock = max(0, total_high_lead - high_lead_sold)
     
     # Legacy calculations for backward compatibility
