@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, UserPlus, Trash2, Settings, Edit, Key } from 'lucide-react';
+import { ArrowLeft, UserPlus, Trash2, Settings, Key, RefreshCw, AlertTriangle } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,11 +16,12 @@ const API = `${BACKEND_URL}/api`;
 export default function ControlPanelPage({ user }) {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [entries, setEntries] = useState([]);
+  const [refiningEntries, setRefiningEntries] = useState([]);
+  const [recyclingEntries, setRecyclingEntries] = useState([]);
   const [drossEntries, setDrossEntries] = useState([]);
   const [rmlPurchases, setRmlPurchases] = useState([]);
-  const [sales, setSales] = useState([]);
   const [rmlReceivedSantosh, setRmlReceivedSantosh] = useState([]);
+  const [sales, setSales] = useState([]);
   const [settings, setSettings] = useState({ pp_battery_percent: 60.5, mc_smf_battery_percent: 57.5, hr_battery_percent: 50.0 });
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -38,6 +39,7 @@ export default function ControlPanelPage({ user }) {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const [usersRes, entriesRes, drossRes, rmlRes, rmlSantoshRes, salesRes, settingsRes] = await Promise.all([
@@ -50,7 +52,12 @@ export default function ControlPanelPage({ user }) {
         axios.get(`${API}/admin/recovery-settings`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       setUsers(usersRes.data);
-      setEntries(entriesRes.data);
+      
+      // Separate refining and recycling entries
+      const allEntries = entriesRes.data;
+      setRefiningEntries(allEntries.filter(e => e.entry_type === 'refining'));
+      setRecyclingEntries(allEntries.filter(e => e.entry_type === 'recycling'));
+      
       setDrossEntries(drossRes.data);
       setRmlPurchases(rmlRes.data);
       setRmlReceivedSantosh(rmlSantoshRes.data);
@@ -63,12 +70,21 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
+
+  // User management
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
       toast.error('Please fill all fields');
       return;
     }
-
     try {
       const token = localStorage.getItem('token');
       await axios.post(`${API}/admin/users`, newUser, {
@@ -85,7 +101,6 @@ export default function ControlPanelPage({ user }) {
 
   const handleDeleteUser = async (userId) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
-
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/users/${userId}`, {
@@ -109,7 +124,6 @@ export default function ControlPanelPage({ user }) {
       toast.error('Password must be at least 4 characters');
       return;
     }
-
     try {
       const token = localStorage.getItem('token');
       await axios.put(`${API}/admin/users/${selectedUser.id}/password`, 
@@ -125,15 +139,15 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
-  const handleDeleteEntry = async (entryId) => {
-    if (!confirm('Are you sure you want to delete this entry?')) return;
-
+  // Delete handlers for each entry type
+  const handleDeleteEntry = async (entryId, entryType) => {
+    if (!confirm(`Are you sure you want to delete this ${entryType} entry?`)) return;
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/entries/${entryId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      toast.success('Entry deleted');
+      toast.success(`${entryType} entry deleted`);
       fetchData();
     } catch (error) {
       toast.error('Failed to delete entry');
@@ -141,23 +155,49 @@ export default function ControlPanelPage({ user }) {
   };
 
   const handleDeleteDrossEntry = async (entryId) => {
-    if (!confirm('Are you sure you want to delete this dross entry?')) return;
-
+    if (!confirm('Are you sure you want to delete this HIGH LEAD entry?')) return;
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/dross-recycling/${entryId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      toast.success('Dross entry deleted');
+      toast.success('HIGH LEAD entry deleted');
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete dross entry');
+      toast.error('Failed to delete entry');
+    }
+  };
+
+  const handleDeleteRmlPurchase = async (entryId) => {
+    if (!confirm('Are you sure you want to delete this RML Purchase entry?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/rml-purchases/${entryId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success('RML Purchase entry deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete entry');
+    }
+  };
+
+  const handleDeleteRmlReceivedSantosh = async (entryId) => {
+    if (!confirm('Are you sure you want to delete this RML Received Santosh entry?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/rml-received-santosh/${entryId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success('RML Received Santosh entry deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete entry');
     }
   };
 
   const handleDeleteSale = async (saleId) => {
     if (!confirm('Are you sure you want to delete this sale?')) return;
-
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/sales/${saleId}`, {
@@ -170,469 +210,443 @@ export default function ControlPanelPage({ user }) {
     }
   };
 
-  const handleDeleteRmlPurchase = async (entryId) => {
-    if (!confirm('Are you sure you want to delete this RML purchase entry?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/admin/rml-purchases/${entryId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      toast.success('RML purchase entry deleted');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to delete RML purchase entry');
-    }
-  };
-
-  const handleDeleteRmlReceivedSantosh = async (entryId) => {
-    if (!confirm('Are you sure you want to delete this RML Received Santosh entry?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/admin/rml-received-santosh/${entryId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      toast.success('RML Received Santosh entry deleted');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to delete RML Received Santosh entry');
-    }
-  };
-
   const handleUpdateSettings = async () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(`${API}/admin/recovery-settings`, settings, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      toast.success('Recovery settings updated! This will affect new recycling entries.');
+      toast.success('Recovery settings updated!');
     } catch (error) {
       toast.error('Failed to update settings');
     }
   };
 
   const handleClearAllData = async () => {
-    if (!confirm('⚠️ WARNING: This will delete ALL entries (Refining, Recycling, Dross, RML Purchases, Sales). Users and settings will be kept. Are you sure?')) return;
-    if (!confirm('This action cannot be undone. Type "yes" to confirm you want to clear all data.')) return;
-
+    if (!confirm('⚠️ WARNING: This will delete ALL entries. Are you sure?')) return;
+    if (!confirm('This action cannot be undone. Confirm again to proceed.')) return;
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(`${API}/admin/clear-all-data`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      toast.success(`All data cleared! Deleted: ${JSON.stringify(response.data.deleted)}`);
+      toast.success(`All data cleared! ${JSON.stringify(response.data.deleted)}`);
       fetchData();
     } catch (error) {
       toast.error('Failed to clear data');
     }
   };
 
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Calculate totals for each entry type
+  const getTotalQuantity = (entries, field) => {
+    return entries.reduce((sum, entry) => {
+      return sum + (entry.batches || []).reduce((batchSum, batch) => {
+        return batchSum + (batch[field] || 0);
+      }, 0);
+    }, 0).toFixed(2);
   };
+
+  const totalEntries = refiningEntries.length + recyclingEntries.length + drossEntries.length + 
+                       rmlPurchases.length + rmlReceivedSantosh.length + sales.length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-2xl font-bold text-slate-700">Loading Control Panel...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <div className="bg-purple-600 border-b border-purple-700 shadow-lg">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 sm:gap-4">
+      {/* Header */}
+      <div className="bg-slate-800 border-b border-slate-700 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
             <Button
               onClick={() => navigate('/')}
-              data-testid="back-button"
-              className="h-10 sm:h-12 px-3 sm:px-4 bg-purple-700 hover:bg-purple-800 text-white border-0 rounded-lg"
+              className="h-12 px-4 bg-slate-700 hover:bg-slate-600 text-white border-0 rounded-lg"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-lg sm:text-2xl font-bold text-white" data-testid="control-panel-title">TT Control Panel</h1>
-              <p className="text-xs sm:text-base text-purple-100">Master User Controls</p>
+              <h1 className="text-2xl font-bold text-white">Control Panel</h1>
+              <p className="text-base text-slate-300">TT Admin • {totalEntries} total entries</p>
             </div>
           </div>
+          <Button
+            onClick={fetchData}
+            className="h-12 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+          >
+            <RefreshCw className="w-5 h-5 mr-2" />
+            Refresh
+          </Button>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-2xl font-bold text-slate-700">Loading...</div>
-          </div>
-        ) : (
-          <Tabs defaultValue="users" className="w-full">
-            {/* Mobile-friendly tabs - scrollable on small screens */}
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 sm:gap-0 mb-4 sm:mb-6 bg-slate-200 p-1 rounded-lg">
-              <TabsTrigger value="users" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
-                Users ({users.length})
-              </TabsTrigger>
-              <TabsTrigger value="entries" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
-                Entries ({entries.length + drossEntries.length})
-              </TabsTrigger>
-              <TabsTrigger value="rml" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
-                RML ({rmlPurchases.length})
-              </TabsTrigger>
-              <TabsTrigger value="santosh" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
-                Santosh ({rmlReceivedSantosh.length})
-              </TabsTrigger>
-              <TabsTrigger value="sales" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
-                Sales ({sales.length})
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="text-sm sm:text-lg font-bold py-2 sm:py-3 data-[state=active]:bg-white">
-                Settings
-              </TabsTrigger>
-            </TabsList>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <Tabs defaultValue="refining" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto gap-1 mb-6 bg-slate-200 p-1 rounded-lg">
+            <TabsTrigger value="refining" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              Refining ({refiningEntries.length})
+            </TabsTrigger>
+            <TabsTrigger value="recycling" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              Recycling ({recyclingEntries.length})
+            </TabsTrigger>
+            <TabsTrigger value="dross" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              High Lead ({drossEntries.length})
+            </TabsTrigger>
+            <TabsTrigger value="rml" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              RML Buy ({rmlPurchases.length})
+            </TabsTrigger>
+            <TabsTrigger value="santosh" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              Santosh ({rmlReceivedSantosh.length})
+            </TabsTrigger>
+            <TabsTrigger value="sales" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              Sales ({sales.length})
+            </TabsTrigger>
+            <TabsTrigger value="users" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              Users ({users.length})
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm font-bold py-2 data-[state=active]:bg-white">
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="users">
-              <Card className="bg-white rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
-                <Button
-                  onClick={() => setShowAddUser(true)}
-                  data-testid="add-user-button"
-                  className="w-full sm:w-auto h-12 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-base"
-                >
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Add New User
-                </Button>
-              </Card>
-
-              <div className="space-y-3 sm:space-y-4">
-                {users.map((u) => (
-                  <Card key={u.id} className="bg-white rounded-lg p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                      <div>
-                        <p className="text-lg sm:text-xl font-bold text-slate-900">{u.name}</p>
-                        <p className="text-sm sm:text-base text-slate-600 break-all">{u.email}</p>
+          {/* REFINING ENTRIES */}
+          <TabsContent value="refining">
+            <Card className="bg-blue-50 border-blue-200 rounded-xl p-4 mb-4">
+              <p className="text-blue-800 font-bold">Total Pure Lead Produced: {getTotalQuantity(refiningEntries, 'pure_lead_kg')} kg</p>
+            </Card>
+            <div className="space-y-3">
+              {refiningEntries.length === 0 ? (
+                <Card className="bg-white rounded-lg p-6 text-center text-slate-500">No refining entries</Card>
+              ) : (
+                refiningEntries.map((entry) => (
+                  <Card key={entry.id} className="bg-white rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded">REFINING</span>
+                          <span className="text-sm text-slate-600">{formatDateTime(entry.timestamp)}</span>
+                          <span className="text-sm text-slate-500">by {entry.user_name}</span>
+                        </div>
+                        {entry.batches && entry.batches.map((batch, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded p-3 mb-2 text-sm">
+                            <p><strong>Batch {idx + 1}:</strong> {batch.lead_ingot_kg} kg input → {batch.pure_lead_kg} kg pure lead</p>
+                            <p className="text-slate-600">
+                              Dross: {batch.initial_dross_kg || 0} + {batch.cu_dross_kg || batch.dross_2nd_kg || 0} + {batch.sn_dross_kg || batch.dross_3rd_kg || 0} + {batch.sb_dross_kg || 0} kg
+                              {batch.sb_percentage && ` | SB: ${batch.sb_percentage}%`}
+                            </p>
+                            {batch.input_source && batch.input_source !== 'manual' && (
+                              <p className="text-blue-600">Source: {batch.input_source}</p>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleChangePassword(u)}
-                          className="flex-1 sm:flex-initial h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                        >
-                          <Key className="w-4 h-4 mr-2 sm:mr-0" />
-                          <span className="sm:hidden">Change Password</span>
-                        </Button>
-                        {u.name !== 'TT' && u.name !== 'Factory' && (
-                          <Button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="flex-1 sm:flex-initial h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2 sm:mr-0" />
-                            <span className="sm:hidden">Delete</span>
-                          </Button>
-                        )}
-                      </div>
+                      <Button onClick={() => handleDeleteEntry(entry.id, 'Refining')} className="bg-red-600 hover:bg-red-700 text-white">
+                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      </Button>
                     </div>
                   </Card>
-                ))}
-              </div>
-            </TabsContent>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="entries">
-              <div className="space-y-3 sm:space-y-4">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900">Refining & Recycling Entries</h3>
-                {entries.length === 0 ? (
-                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
-                    No entries yet
-                  </Card>
-                ) : (
-                  entries.map((entry) => (
-                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div>
-                          <p className="text-base sm:text-lg font-bold text-slate-900">{entry.entry_type.toUpperCase()} - {entry.user_name}</p>
-                          <p className="text-xs sm:text-sm text-slate-600">{formatDateTime(entry.timestamp)} | {entry.batches.length} batch(es)</p>
+          {/* RECYCLING ENTRIES */}
+          <TabsContent value="recycling">
+            <Card className="bg-green-50 border-green-200 rounded-xl p-4 mb-4">
+              <p className="text-green-800 font-bold">Total Receivable: {getTotalQuantity(recyclingEntries, 'receivable_kg')} kg</p>
+            </Card>
+            <div className="space-y-3">
+              {recyclingEntries.length === 0 ? (
+                <Card className="bg-white rounded-lg p-6 text-center text-slate-500">No recycling entries</Card>
+              ) : (
+                recyclingEntries.map((entry) => (
+                  <Card key={entry.id} className="bg-white rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">RECYCLING</span>
+                          <span className="text-sm text-slate-600">{formatDateTime(entry.timestamp)}</span>
+                          <span className="text-sm text-slate-500">by {entry.user_name}</span>
                         </div>
-                        <Button
-                          onClick={() => handleDeleteEntry(entry.id)}
-                          data-testid={`delete-entry-${entry.id}`}
-                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
+                        {entry.batches && entry.batches.map((batch, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded p-3 mb-2 text-sm">
+                            <p><strong>Batch {idx + 1}:</strong> {batch.battery_type} - {batch.quantity_kg} kg @ {batch.recovery_percent}%</p>
+                            <p className="text-green-600">Receivable: {batch.receivable_kg} kg</p>
+                          </div>
+                        ))}
                       </div>
-                    </Card>
-                  ))
-                )}
-
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mt-6 sm:mt-8">HIGH LEAD Recovery Entries</h3>
-                {drossEntries.length === 0 ? (
-                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
-                    No dross entries yet
+                      <Button onClick={() => handleDeleteEntry(entry.id, 'Recycling')} className="bg-red-600 hover:bg-red-700 text-white">
+                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      </Button>
+                    </div>
                   </Card>
-                ) : (
-                  drossEntries.map((entry) => (
-                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div>
-                          <p className="text-base sm:text-lg font-bold text-yellow-700">HIGH LEAD - {entry.user_name}</p>
-                          <p className="text-xs sm:text-sm text-slate-600">{formatDateTime(entry.timestamp)} | {entry.batches.length} batch(es)</p>
-                        </div>
-                        <Button
-                          onClick={() => handleDeleteDrossEntry(entry.id)}
-                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </TabsContent>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="rml">
-              <div className="space-y-3 sm:space-y-4">
-                {rmlPurchases.length === 0 ? (
-                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
-                    No RML purchases yet
+          {/* DROSS / HIGH LEAD ENTRIES */}
+          <TabsContent value="dross">
+            <Card className="bg-yellow-50 border-yellow-200 rounded-xl p-4 mb-4">
+              <p className="text-yellow-800 font-bold">Total High Lead Recovered: {getTotalQuantity(drossEntries, 'high_lead_recovered')} kg</p>
+            </Card>
+            <div className="space-y-3">
+              {drossEntries.length === 0 ? (
+                <Card className="bg-white rounded-lg p-6 text-center text-slate-500">No HIGH LEAD entries</Card>
+              ) : (
+                drossEntries.map((entry) => (
+                  <Card key={entry.id} className="bg-white rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded">HIGH LEAD</span>
+                          <span className="text-sm text-slate-600">{formatDateTime(entry.timestamp)}</span>
+                          <span className="text-sm text-slate-500">by {entry.user_name}</span>
+                        </div>
+                        {entry.batches && entry.batches.map((batch, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded p-3 mb-2 text-sm">
+                            <p><strong>Batch {idx + 1}:</strong> {batch.dross_type} - {batch.quantity_sent} kg sent</p>
+                            <p className="text-yellow-600">High Lead Recovered: {batch.high_lead_recovered} kg</p>
+                          </div>
+                        ))}
+                      </div>
+                      <Button onClick={() => handleDeleteDrossEntry(entry.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      </Button>
+                    </div>
                   </Card>
-                ) : (
-                  rmlPurchases.map((entry) => (
-                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                        <div className="flex-1">
-                          <p className="text-xs sm:text-sm text-slate-600 mb-2">
-                            {formatDateTime(entry.timestamp)} by {entry.user_name}
-                          </p>
-                          {entry.batches && entry.batches.map((batch, idx) => (
-                            <div key={idx} className="bg-purple-50 rounded-lg p-3 mb-2">
-                              <p className="text-base sm:text-lg font-bold text-purple-800">
-                                {batch.sku || `Batch ${idx + 1}`}
-                              </p>
-                              <p className="text-sm text-slate-600">
-                                {batch.quantity_kg} kg | {batch.pieces} pcs | SB: {batch.sb_percentage}%
-                              </p>
-                              {batch.remarks && (
-                                <p className="text-xs text-slate-500 mt-1">Seller: {batch.remarks}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          onClick={() => handleDeleteRmlPurchase(entry.id)}
-                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </TabsContent>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="santosh">
-              <div className="space-y-3 sm:space-y-4">
-                {rmlReceivedSantosh.length === 0 ? (
-                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
-                    No RML Received Santosh entries yet
+          {/* RML PURCHASES */}
+          <TabsContent value="rml">
+            <Card className="bg-purple-50 border-purple-200 rounded-xl p-4 mb-4">
+              <p className="text-purple-800 font-bold">Total RML Purchased: {getTotalQuantity(rmlPurchases, 'quantity_kg')} kg</p>
+            </Card>
+            <div className="space-y-3">
+              {rmlPurchases.length === 0 ? (
+                <Card className="bg-white rounded-lg p-6 text-center text-slate-500">No RML purchase entries</Card>
+              ) : (
+                rmlPurchases.map((entry) => (
+                  <Card key={entry.id} className="bg-white rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded">RML PURCHASE</span>
+                          <span className="text-sm text-slate-600">{formatDateTime(entry.timestamp)}</span>
+                          <span className="text-sm text-slate-500">by {entry.user_name}</span>
+                        </div>
+                        {entry.batches && entry.batches.map((batch, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded p-3 mb-2 text-sm">
+                            <p><strong>SKU:</strong> {batch.sku}</p>
+                            <p>{batch.quantity_kg} kg | {batch.pieces} pcs | SB: {batch.sb_percentage}%</p>
+                            {batch.remarks && <p className="text-slate-600">Seller: {batch.remarks}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <Button onClick={() => handleDeleteRmlPurchase(entry.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      </Button>
+                    </div>
                   </Card>
-                ) : (
-                  rmlReceivedSantosh.map((entry) => (
-                    <Card key={entry.id} className="bg-white rounded-lg p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                        <div className="flex-1">
-                          <p className="text-xs sm:text-sm text-slate-600 mb-2">
-                            {formatDateTime(entry.timestamp)} by {entry.user_name}
-                          </p>
-                          {entry.batches && entry.batches.map((batch, idx) => (
-                            <div key={idx} className="bg-green-50 rounded-lg p-3 mb-2">
-                              <p className="text-base sm:text-lg font-bold text-green-800">
-                                {batch.sku || `Batch ${idx + 1}`}
-                              </p>
-                              <p className="text-sm text-slate-600">
-                                {batch.quantity_kg} kg | {batch.pieces} pcs | SB: {batch.sb_percentage}%
-                              </p>
-                              {batch.remarks && (
-                                <p className="text-xs text-slate-500 mt-1">Remarks: {batch.remarks}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          onClick={() => handleDeleteRmlReceivedSantosh(entry.id)}
-                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </TabsContent>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="sales">
-              <div className="space-y-3 sm:space-y-4">
-                {sales.length === 0 ? (
-                  <Card className="bg-white rounded-lg p-4 sm:p-6 text-center text-slate-500">
-                    No sales yet
+          {/* RML RECEIVED SANTOSH */}
+          <TabsContent value="santosh">
+            <Card className="bg-green-50 border-green-200 rounded-xl p-4 mb-4">
+              <p className="text-green-800 font-bold">Total RML Received (Santosh): {getTotalQuantity(rmlReceivedSantosh, 'quantity_kg')} kg</p>
+            </Card>
+            <div className="space-y-3">
+              {rmlReceivedSantosh.length === 0 ? (
+                <Card className="bg-white rounded-lg p-6 text-center text-slate-500">No RML Received Santosh entries</Card>
+              ) : (
+                rmlReceivedSantosh.map((entry) => (
+                  <Card key={entry.id} className="bg-white rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">RML SANTOSH</span>
+                          <span className="text-sm text-slate-600">{formatDateTime(entry.timestamp)}</span>
+                          <span className="text-sm text-slate-500">by {entry.user_name}</span>
+                        </div>
+                        {entry.batches && entry.batches.map((batch, idx) => (
+                          <div key={idx} className="bg-slate-50 rounded p-3 mb-2 text-sm">
+                            <p><strong>SKU:</strong> {batch.sku}</p>
+                            <p>{batch.quantity_kg} kg | {batch.pieces} pcs | SB: {batch.sb_percentage}%</p>
+                            {batch.remarks && <p className="text-slate-600">Remarks: {batch.remarks}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <Button onClick={() => handleDeleteRmlReceivedSantosh(entry.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      </Button>
+                    </div>
                   </Card>
-                ) : (
-                  sales.map((sale) => (
-                    <Card key={sale.id} className="bg-white rounded-lg p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div>
-                          <p className="text-base sm:text-lg font-bold text-slate-900">{sale.party_name}</p>
-                          <p className="text-xs sm:text-sm text-slate-600">
-                            {formatDateTime(sale.timestamp)} | {sale.quantity_kg} kg by {sale.user_name}
-                          </p>
-                          {sale.sku_type && (
-                            <p className="text-xs sm:text-sm font-semibold text-blue-600 mt-1">
-                              SKU: {sale.sku_type}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          onClick={() => handleDeleteSale(sale.id)}
-                          className="w-full sm:w-auto h-10 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </TabsContent>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="settings">
-              <Card className="bg-white rounded-xl p-4 sm:p-8">
-                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">Battery Recovery Percentages</h3>
-                <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">Adjust recovery percentages for battery recycling calculations. Changes apply to new entries only.</p>
-                
-                <div className="space-y-4 sm:space-y-6">
-                  <div>
-                    <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                      PP Battery Recovery %
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={settings.pp_battery_percent}
-                      onChange={(e) => setSettings({ ...settings, pp_battery_percent: parseFloat(e.target.value) })}
-                      className="h-14 sm:h-16 text-xl sm:text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
-                    />
+          {/* SALES */}
+          <TabsContent value="sales">
+            <Card className="bg-cyan-50 border-cyan-200 rounded-xl p-4 mb-4">
+              <p className="text-cyan-800 font-bold">Total Sold: {sales.reduce((sum, s) => sum + s.quantity_kg, 0).toFixed(2)} kg</p>
+            </Card>
+            <div className="space-y-3">
+              {sales.length === 0 ? (
+                <Card className="bg-white rounded-lg p-6 text-center text-slate-500">No sales entries</Card>
+              ) : (
+                sales.map((sale) => (
+                  <Card key={sale.id} className="bg-white rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-cyan-100 text-cyan-800 text-xs font-bold rounded">SALE</span>
+                          <span className="text-sm text-slate-600">{formatDateTime(sale.timestamp)}</span>
+                          <span className="text-sm text-slate-500">by {sale.user_name}</span>
+                        </div>
+                        <div className="bg-slate-50 rounded p-3 text-sm">
+                          <p><strong>Party:</strong> {sale.party_name}</p>
+                          <p><strong>SKU:</strong> {sale.sku_type || 'N/A'}</p>
+                          <p><strong>Quantity:</strong> {sale.quantity_kg} kg</p>
+                        </div>
+                      </div>
+                      <Button onClick={() => handleDeleteSale(sale.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      </Button>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* USERS */}
+          <TabsContent value="users">
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => setShowAddUser(true)} className="bg-green-600 hover:bg-green-700 text-white">
+                <UserPlus className="w-5 h-5 mr-2" /> Add User
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {users.map((u) => (
+                <Card key={u.id} className="bg-white rounded-lg p-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <div>
+                      <p className="text-lg font-bold text-slate-900">{u.name}</p>
+                      <p className="text-sm text-slate-600">{u.email}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => handleChangePassword(u)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Key className="w-4 h-4 mr-1" /> Password
+                      </Button>
+                      {u.name !== 'TT' && u.name !== 'Factory' && (
+                        <Button onClick={() => handleDeleteUser(u.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                          <Trash2 className="w-4 h-4 mr-1" /> Delete
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-                  <div>
-                    <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                      MC/SMF Battery Recovery %
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={settings.mc_smf_battery_percent}
-                      onChange={(e) => setSettings({ ...settings, mc_smf_battery_percent: parseFloat(e.target.value) })}
-                      className="h-14 sm:h-16 text-xl sm:text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">
-                      HR Battery Recovery %
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={settings.hr_battery_percent}
-                      onChange={(e) => setSettings({ ...settings, hr_battery_percent: parseFloat(e.target.value) })}
-                      className="h-14 sm:h-16 text-xl sm:text-2xl px-4 w-full border-2 border-slate-200 rounded-lg"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleUpdateSettings}
-                    data-testid="save-settings-button"
-                    className="w-full h-12 sm:h-14 text-lg sm:text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg rounded-lg"
-                  >
-                    <Settings className="w-5 h-5 mr-2" />
-                    Save Settings
-                  </Button>
-
-                  {/* Danger Zone */}
-                  <div className="mt-8 pt-6 border-t-2 border-red-200">
-                    <h4 className="text-lg font-bold text-red-600 mb-4">⚠️ Danger Zone</h4>
-                    <Button
-                      onClick={handleClearAllData}
-                      data-testid="clear-all-data-button"
-                      className="w-full h-12 sm:h-14 text-lg sm:text-xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg rounded-lg"
-                    >
-                      <Trash2 className="w-5 h-5 mr-2" />
-                      Clear All Data
-                    </Button>
-                    <p className="text-sm text-red-500 mt-2">
-                      This will delete all entries (Refining, Recycling, Dross, RML, Sales). Users and settings will be kept.
-                    </p>
-                  </div>
+          {/* SETTINGS */}
+          <TabsContent value="settings">
+            <Card className="bg-white rounded-xl p-6 mb-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-4">Recovery Percentages</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">PP Battery (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={settings.pp_battery_percent}
+                    onChange={(e) => setSettings({ ...settings, pp_battery_percent: parseFloat(e.target.value) })}
+                    className="h-12 text-lg"
+                  />
                 </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        )}
+                <div>
+                  <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">MC/SMF Battery (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={settings.mc_smf_battery_percent}
+                    onChange={(e) => setSettings({ ...settings, mc_smf_battery_percent: parseFloat(e.target.value) })}
+                    className="h-12 text-lg"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">HR Battery (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={settings.hr_battery_percent}
+                    onChange={(e) => setSettings({ ...settings, hr_battery_percent: parseFloat(e.target.value) })}
+                    className="h-12 text-lg"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleUpdateSettings} className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white text-lg font-bold">
+                <Settings className="w-5 h-5 mr-2" /> Save Settings
+              </Button>
+            </Card>
+
+            {/* Danger Zone */}
+            <Card className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+                <h3 className="text-xl font-bold text-red-800">Danger Zone</h3>
+              </div>
+              <p className="text-red-700 mb-4">This will permanently delete ALL entries (Refining, Recycling, Dross, RML, Sales). Users and settings will be preserved.</p>
+              <Button onClick={handleClearAllData} className="w-full h-12 bg-red-600 hover:bg-red-700 text-white text-lg font-bold">
+                <Trash2 className="w-5 h-5 mr-2" /> Clear All Data
+              </Button>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
+      {/* Add User Dialog */}
       <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl font-bold">Add New User</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Add New User</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
               <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">Name</Label>
-              <Input
-                value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                className="h-12 text-lg px-4 w-full"
-                placeholder="Enter name"
-              />
+              <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} className="h-12 text-lg" placeholder="Enter name" />
             </div>
             <div>
               <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">Email</Label>
-              <Input
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                className="h-12 text-lg px-4 w-full"
-                placeholder="Enter email"
-              />
+              <Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="h-12 text-lg" placeholder="Enter email" />
             </div>
             <div>
               <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">Password</Label>
-              <Input
-                type="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                className="h-12 text-lg px-4 w-full"
-                placeholder="Enter password"
-              />
+              <Input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="h-12 text-lg" placeholder="Enter password" />
             </div>
-            <Button
-              onClick={handleAddUser}
-              data-testid="submit-user-button"
-              className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg"
-            >
-              Add User
-            </Button>
+            <Button onClick={handleAddUser} className="w-full h-12 bg-green-600 hover:bg-green-700 text-white text-lg font-bold">Add User</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Change Password Dialog */}
       <Dialog open={showChangePassword} onOpenChange={setShowChangePassword}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl font-bold">Change Password</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Change Password</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4 mt-4">
@@ -643,22 +657,10 @@ export default function ControlPanelPage({ user }) {
               </div>
               <div>
                 <Label className="block text-sm font-bold text-slate-500 uppercase mb-2">New Password</Label>
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="h-12 text-lg px-4 w-full"
-                  placeholder="Enter new password"
-                  data-testid="new-password-input"
-                />
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-12 text-lg" placeholder="Enter new password" />
               </div>
-              <Button
-                onClick={handleSubmitPasswordChange}
-                data-testid="submit-password-button"
-                className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-              >
-                <Key className="w-5 h-5 mr-2" />
-                Update Password
+              <Button onClick={handleSubmitPasswordChange} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold">
+                <Key className="w-5 h-5 mr-2" /> Update Password
               </Button>
             </div>
           )}
