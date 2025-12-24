@@ -1232,7 +1232,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     # Calculate final stocks
     pure_lead_stock = max(0, total_pure_lead_manufactured - pure_lead_sold)
     # RML Stock = RML Purchases + RML Received Santosh - Used in Refining - Sold
-    rml_stock = max(0, total_rml_purchased + rml_received_santosh_total - rml_used_in_refining - santosh_skus_used_in_refining - rml_sold)
+    rml_stock = max(0, total_rml_purchased + rml_received_santosh_total - rml_purchases_used_in_refining - santosh_skus_used_in_refining - rml_sold)
     high_lead_stock = max(0, total_high_lead - high_lead_sold)
     
     # Legacy calculations for backward compatibility
