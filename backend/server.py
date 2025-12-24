@@ -1203,15 +1203,16 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
         for batch in entry.get('batches', [])
     )
     
-    # Calculate RML used in refining (non-manual, non-SANTOSH input sources)
-    rml_used_in_refining = sum(
+    # Calculate RML Purchases used in refining (non-manual, non-SANTOSH, non-SANTOSH- input sources)
+    rml_purchases_used_in_refining = sum(
         batch.get('lead_ingot_kg', 0)
         for entry in refining_entries
         for batch in entry.get('batches', [])
-        if batch.get('input_source') not in ['manual', 'SANTOSH', None, '']
+        if batch.get('input_source') not in ['manual', 'SANTOSH', None, ''] 
+        and not batch.get('input_source', '').startswith('SANTOSH-')
     )
     
-    # Calculate RML Received Santosh used in refining
+    # Calculate RML Received Santosh used in refining (SANTOSH- prefixed SKUs)
     santosh_skus_used_in_refining = sum(
         batch.get('lead_ingot_kg', 0)
         for entry in refining_entries
